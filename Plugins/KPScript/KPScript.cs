@@ -21,20 +21,20 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace KeePass.Plugins
-{
-	public class CancellableOperationEventArgs : EventArgs
-	{
-		private bool m_bCancel = false;
+using KeePass.Plugins;
 
-		public CancellableOperationEventArgs()
+namespace KPScript
+{
+	public sealed class KPScript : Plugin
+	{
+		public override bool Initialize(IPluginHost host)
 		{
+			return base.Initialize(host);
 		}
 
-		public bool Cancel
+		public override void Terminate()
 		{
-			get { return m_bCancel; }
-			set { m_bCancel |= value; }
+			base.Terminate();
 		}
 	}
 }

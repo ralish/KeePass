@@ -20,35 +20,12 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Drawing;
-using System.Diagnostics;
 
-using KeePass.Forms;
-using KeePass.Util;
-
-using KeePassLib;
-using KeePassLib.Cryptography.Cipher;
-
-namespace KeePass.Plugins
+namespace KeePass.UI
 {
-	public interface IKeePassPluginHost
+	public interface IGwmWindow
 	{
-		MainForm MainWindow
-		{
-			get;
-		}
-
-		PwDatabase Database
-		{
-			get;
-		}
-
-		CommandLineArgs CommandLineArgs
-		{
-			get;
-		}
-
-		CipherPool CipherPool
+		bool CanCloseWithoutDataLoss
 		{
 			get;
 		}
