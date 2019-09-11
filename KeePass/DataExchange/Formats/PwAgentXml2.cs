@@ -19,24 +19,21 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Text;
 using System.Xml;
-using System.IO;
-using System.Diagnostics;
-using System.Drawing;
 
-using KeePass.Resources;
 using KeePass.Util;
 
 using KeePassLib;
-using KeePassLib.Interfaces;
 using KeePassLib.Security;
 using KeePassLib.Utility;
 
 namespace KeePass.DataExchange.Formats
 {
 	// 2.3.4-2.6.2+
-	internal sealed class PwAgentXml234 : FileFormatProvider
+	internal static class PwAgentXml2
 	{
 		private const string ElemGroup = "group";
 		private const string ElemGroupName = "name";
@@ -52,28 +49,10 @@ namespace KeePass.DataExchange.Formats
 		private const string ElemEntryLastModTime = "date_modified";
 		private const string ElemEntryExpireTime = "date_expire";
 
-		public override bool SupportsImport { get { return true; } }
-		public override bool SupportsExport { get { return false; } }
-
-		public override string FormatName { get { return "Password Agent XML"; } }
-		public override string DefaultExtension { get { return "xml"; } }
-		public override string ApplicationGroup { get { return KPRes.PasswordManagers; } }
-
-		public override Image SmallIcon
+		internal static void Import(PwDatabase pwStorage, XmlDocument d)
 		{
-			get { return KeePass.Properties.Resources.B16x16_Imp_PwAgent; }
-		}
-
-		public override void Import(PwDatabase pwStorage, Stream sInput,
-			IStatusLogger slLogger)
-		{
-			StreamReader sr = new StreamReader(sInput, Encoding.Default);
-			XmlDocument xmlDoc = XmlUtilEx.CreateXmlDocument();
-			xmlDoc.Load(sr);
-			sr.Close();
-			sInput.Close();
-
-			XmlNode xmlRoot = xmlDoc.DocumentElement;
+			XmlNode xmlRoot = d.DocumentElement;
+			Debug.Assert(xmlRoot.Name == "data");
 
 			foreach(XmlNode xmlChild in xmlRoot.ChildNodes)
 			{
