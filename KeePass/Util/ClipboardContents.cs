@@ -20,28 +20,47 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Diagnostics;
+using System.Windows.Forms;
 
-using KeePass.Plugins;
-
-namespace ArcFourCipher
+namespace KeePass.Util
 {
-	public sealed class ArcFourCipher : Plugin
+	public sealed class ClipboardContents
 	{
-		private IPluginHost m_host = null;
-		private static ArcFourEngine m_arcFourEngine = new ArcFourEngine();
+		private List<KeyValuePair<string, object>> m_vContents =
+			new List<KeyValuePair<string, object>>();
 
-		public override bool Initialize(IPluginHost host)
+		public ClipboardContents(bool bGetFromCurrent)
 		{
-			if(host == null) return false;
-			m_host = host;
+			if(bGetFromCurrent) GetData();
+		}
 
-			Debug.Assert(m_arcFourEngine != null);
-			if(m_arcFourEngine == null) return false;
+		~ClipboardContents()
+		{
+			m_vContents.Clear();
+		}
 
-			m_host.CipherPool.AddCipher(m_arcFourEngine);
+		public void GetData()
+		{
+			m_vContents.Clear();
 
-			return true;
+			IDataObject idoClip = Clipboard.GetDataObject();
+
+			foreach(string strFormat in idoClip.GetFormats())
+			{
+				KeyValuePair<string, object> kvp =
+					new KeyValuePair<string, object>(strFormat,
+					idoClip.GetData(strFormat));
+
+				m_vContents.Add(kvp);
+			}
+		}
+
+		public void SetData()
+		{
+			Clipboard.Clear();
+
+			foreach(KeyValuePair<string, object> kvp in m_vContents)
+				Clipboard.SetData(kvp.Key, kvp.Value);
 		}
 	}
 }

@@ -17,24 +17,4 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-
-using KeePass.Plugins;
-
-namespace KPScript
-{
-	public sealed class KPScript : Plugin
-	{
-		public override bool Initialize(IPluginHost host)
-		{
-			return base.Initialize(host);
-		}
-
-		public override void Terminate()
-		{
-			base.Terminate();
-		}
-	}
-}
+#include "StdAfx.h"
