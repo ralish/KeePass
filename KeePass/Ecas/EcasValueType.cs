@@ -1,6 +1,6 @@
-/*
+﻿/*
   KeePass Password Safe - The Open-Source Password Manager
-  Copyright (C) 2003-2008 Dominik Reichl <dominik.reichl@t-online.de>
+  Copyright (C) 2003-2009 Dominik Reichl <dominik.reichl@t-online.de>
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -17,30 +17,16 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#ifndef ___STD_AFX_H___
-#define ___STD_AFX_H___
+using System;
 
-#pragma once
-
-#ifndef WINVER
-#define WINVER 0x0501
-#endif
-
-#ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0501
-#endif						
-
-#ifndef _WIN32_WINDOWS
-#define _WIN32_WINDOWS 0x0410
-#endif
-
-#ifndef _WIN32_IE
-#define _WIN32_IE 0x0600
-#endif
-
-#define WIN32_LEAN_AND_MEAN
-#define VC_EXTRALEAN
-
-#include <windows.h>
-
-#endif
+namespace KeePass.Ecas
+{
+	public enum EcasValueType
+	{
+		String = 1,
+		Bool = 2,
+		EnumStrings = 3,
+		Int64 = 4,
+		UInt64 = 5
+	}
+}
