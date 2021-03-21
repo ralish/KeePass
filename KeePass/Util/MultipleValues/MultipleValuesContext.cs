@@ -19,21 +19,32 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
-using System.Windows.Forms;
 
-namespace KeePass.Util.SendInputExt
+namespace KeePass.Util.MultipleValues
 {
-	public interface ISiEngine
+	public abstract class MultipleValuesContext : IDisposable
 	{
-		void Init();
-		void Release();
+		~MultipleValuesContext()
+		{
+			Dispose(false);
+		}
 
-		void SendKey(int iVKey, bool? obExtKey, bool? obDown);
-		void SetKeyModifier(Keys kMod, bool bDown);
+		public void Dispose()
+		{
+			Dispose(true);
+			GC.SuppressFinalize(this);
+		}
 
-		void SendChar(char ch, bool? obDown);
+		protected virtual void Dispose(bool disposing)
+		{
+			Debug.Assert(disposing);
+		}
 
-		void Delay(uint uMs);
+		internal virtual bool ApplyChanges()
+		{
+			return false;
+		}
 	}
 }

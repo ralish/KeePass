@@ -20,20 +20,20 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Windows.Forms;
 
 namespace KeePass.Util.SendInputExt
 {
-	public interface ISiEngine
+	public sealed class SiEventArgs : EventArgs
 	{
-		void Init();
-		void Release();
+		private ISiEngine m_e = null;
+		public ISiEngine Engine
+		{
+			get { return m_e; }
+			set { m_e = value; }
+		}
 
-		void SendKey(int iVKey, bool? obExtKey, bool? obDown);
-		void SetKeyModifier(Keys kMod, bool bDown);
-
-		void SendChar(char ch, bool? obDown);
-
-		void Delay(uint uMs);
+		public SiEventArgs()
+		{
+		}
 	}
 }
