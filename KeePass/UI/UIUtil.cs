@@ -1401,9 +1401,9 @@ namespace KeePass.UI
 		// }
 
 		public static void ConfigureTbButton(ToolStripItem tb, string strText,
-			string strTooltip)
+			string strToolTip)
 		{
-			ConfigureTbButton(tb, strText, strTooltip, null);
+			ConfigureTbButton(tb, strText, strToolTip, null);
 		}
 
 		public static void ConfigureTbButton(ToolStripItem tb, string strText,

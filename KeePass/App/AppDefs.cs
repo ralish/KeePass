@@ -207,6 +207,8 @@ namespace KeePass.App
 
 			public static readonly string ConfigSetLanguageFile = "set-languagefile";
 
+			internal const string KdfTest = "kdf-test";
+
 			public static readonly string PlgxCreate = "plgx-create";
 			public static readonly string PlgxCreateInfo = "plgx-create-info";
 			public static readonly string PlgxPrereqKP = "plgx-prereq-kp";

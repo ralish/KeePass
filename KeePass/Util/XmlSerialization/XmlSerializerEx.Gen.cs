@@ -1916,9 +1916,6 @@ namespace KeePass.Util.XmlSerialization
 					case "Export":
 						o.Export = ReadBoolean(xr);
 						break;
-					case "ExportNoKey":
-						o.ExportNoKey = ReadBoolean(xr);
-						break;
 					case "Import":
 						o.Import = ReadBoolean(xr);
 						break;

@@ -411,7 +411,7 @@ namespace KeePass.Forms
 
 			LoadPolicyOption("Plugins", AppPolicyId.Plugins);
 			LoadPolicyOption("Export", AppPolicyId.Export);
-			LoadPolicyOption("ExportNoKey", AppPolicyId.ExportNoKey);
+			// LoadPolicyOption("ExportNoKey", AppPolicyId.ExportNoKey);
 			LoadPolicyOption("Import", AppPolicyId.Import);
 			LoadPolicyOption("Print", AppPolicyId.Print);
 			LoadPolicyOption("PrintNoKey", AppPolicyId.PrintNoKey);

@@ -418,6 +418,7 @@ namespace KeePass
 				MainCleanUp();
 				return;
 			}
+			if(KeyUtil.KdfPrcTestAsChild()) { MainCleanUp(); return; }
 			if(m_cmdLineArgs[AppDefs.CommandLineOptions.PlgxCreate] != null)
 			{
 				PlgxPlugin.CreateFromCommandLine();

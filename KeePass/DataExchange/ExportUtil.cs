@@ -127,9 +127,12 @@ namespace KeePass.DataExchange
 			Debug.Assert(pd != null);
 
 			if(!AppPolicy.Try(AppPolicyId.Export)) return false;
-			if(!AppPolicy.Current.ExportNoKey && (pd != null))
+			// if(!AppPolicy.Current.ExportNoKey && (pd != null))
+			if(pd != null)
 			{
-				if(!KeyUtil.ReAskKey(pd, true)) return false;
+				if(!KeyUtil.ReAskKey(pd, true, KPRes.EnterCurrentCompositeKey +
+					" (" + KPRes.Export + ")"))
+					return false;
 			}
 
 			if(!fileFormat.SupportsExport) return false;
