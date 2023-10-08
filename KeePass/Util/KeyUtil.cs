@@ -324,13 +324,15 @@ namespace KeePass.Util
 		}
 
 		internal static bool ReAskKey(PwDatabase pd, bool bFailWithUI,
-			string strTitle)
+			string strContext)
 		{
 			if(pd == null) { Debug.Assert(false); return false; }
 
+			string strTitle = GetReAskKeyTitle(strContext);
+
 			KeyPromptFormResult r;
 			DialogResult dr = KeyPromptForm.ShowDialog(pd.IOConnectionInfo,
-				false, (strTitle ?? KPRes.EnterCurrentCompositeKey), out r);
+				false, strTitle, out r);
 			if((dr != DialogResult.OK) || (r == null)) return false;
 
 			CompositeKey ck = r.CompositeKey;
@@ -341,6 +343,16 @@ namespace KeePass.Util
 					KLRes.InvalidCompositeKeyHint);
 
 			return bEqual;
+		}
+
+		internal static string GetReAskKeyTitle(string strContext)
+		{
+			string str = KPRes.EnterCurrentCompositeKey;
+
+			if(!string.IsNullOrEmpty(strContext))
+				str += " (" + strContext + ")";
+
+			return str;
 		}
 
 		// Returns false if the child process cannot be spawned.

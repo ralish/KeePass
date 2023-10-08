@@ -27,6 +27,7 @@ using System.Xml.Serialization;
 
 using KeePass.App.Configuration;
 using KeePass.Resources;
+using KeePass.Util;
 
 using KeePassLib;
 using KeePassLib.Utility;
@@ -405,6 +406,15 @@ namespace KeePass.App
 			}
 
 			return b;
+		}
+
+		internal static bool TryWithKey(AppPolicyId p, bool bNoKeyRepeat,
+			PwDatabase pd, string strContext)
+		{
+			if(!Try(p)) return false;
+
+			if(bNoKeyRepeat) return true;
+			return KeyUtil.ReAskKey(pd, true, strContext);
 		}
 
 		internal static void ApplyToConfig()

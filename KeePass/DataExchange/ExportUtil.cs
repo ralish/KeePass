@@ -126,14 +126,9 @@ namespace KeePass.DataExchange
 			PwDatabase pd = pwExportInfo.ContextDatabase;
 			Debug.Assert(pd != null);
 
-			if(!AppPolicy.Try(AppPolicyId.Export)) return false;
-			// if(!AppPolicy.Current.ExportNoKey && (pd != null))
-			if(pd != null)
-			{
-				if(!KeyUtil.ReAskKey(pd, true, KPRes.EnterCurrentCompositeKey +
-					" (" + KPRes.Export + ")"))
-					return false;
-			}
+			// AppPolicy.Current.ExportNoKey is obsolete
+			if(!AppPolicy.TryWithKey(AppPolicyId.Export, (pd == null), pd, KPRes.Export))
+				return false;
 
 			if(!fileFormat.SupportsExport) return false;
 			if(!fileFormat.TryBeginExport()) return false;
