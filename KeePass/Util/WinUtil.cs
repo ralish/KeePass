@@ -615,10 +615,10 @@ namespace KeePass.Util
 		{
 			if(strUrl == null) { Debug.Assert(false); return false; }
 
-			string strLower = strUrl.ToLower();
-
-			if(strLower.StartsWith("cmd://")) return true;
-			if(strLower.StartsWith("\\\\")) return true; // UNC path support
+			if(strUrl.StartsWith("cmd://", StrUtil.CaseIgnoreCmp))
+				return true;
+			if(strUrl.StartsWith("\\\\"))
+				return true; // UNC path support
 
 			return false;
 		}
@@ -628,10 +628,10 @@ namespace KeePass.Util
 		{
 			if(strUrl == null) { Debug.Assert(false); return string.Empty; }
 
-			string strLower = strUrl.ToLower();
-
-			if(strLower.StartsWith("cmd://")) return strUrl.Remove(0, 6);
-			if(strLower.StartsWith("\\\\")) return strUrl; // UNC path support
+			if(strUrl.StartsWith("cmd://", StrUtil.CaseIgnoreCmp))
+				return strUrl.Remove(0, 6);
+			if(strUrl.StartsWith("\\\\"))
+				return strUrl; // UNC path support
 
 			return strUrl;
 		}
@@ -949,8 +949,7 @@ namespace KeePass.Util
 			}
 			catch(Exception ex)
 			{
-				if(bShowError)
-					MessageService.ShowWarning(strFilePath, ex.Message);
+				if(bShowError) MessageService.ShowWarning(strFilePath, ex);
 			}
 		}
 	}

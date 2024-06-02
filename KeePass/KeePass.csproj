@@ -353,6 +353,9 @@
     <Compile Include="..\KeePassLib\Utility\AppLogEx.cs">
       <Link>KeePassLib\Utility\AppLogEx.cs</Link>
     </Compile>
+    <Compile Include="..\KeePassLib\Utility\ExtendedException.cs">
+      <Link>KeePassLib\Utility\ExtendedException.cs</Link>
+    </Compile>
     <Compile Include="..\KeePassLib\Utility\GfxUtil.cs">
       <Link>KeePassLib\Utility\GfxUtil.cs</Link>
     </Compile>

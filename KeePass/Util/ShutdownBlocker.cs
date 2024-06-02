@@ -32,7 +32,7 @@ namespace KeePass.Util
 	{
 		private static ShutdownBlocker g_sdbPrimary = null;
 #if DEBUG
-		internal static ShutdownBlocker Instance
+		internal static ShutdownBlocker PrimaryInstance
 		{
 			get { return g_sdbPrimary; }
 		}

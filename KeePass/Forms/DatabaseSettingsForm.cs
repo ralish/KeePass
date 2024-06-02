@@ -706,7 +706,8 @@ namespace KeePass.Forms
 			}
 			catch(Exception ex)
 			{
-				if(!string.IsNullOrEmpty(ex.Message)) strMsg = ex.Message;
+				Debug.Assert(false);
+				strMsg = StrUtil.FormatException(ex, null);
 			}
 			finally { m_thKdf = null; } // Before continuation, to enable controls
 
@@ -757,7 +758,7 @@ namespace KeePass.Forms
 
 		private void KdfTestTh(object o)
 		{
-			string strMsg = KLRes.UnknownError;
+			string strMsg;
 
 			try
 			{
@@ -786,7 +787,7 @@ namespace KeePass.Forms
 			catch(Exception ex)
 			{
 				Debug.Assert(false);
-				if(!string.IsNullOrEmpty(ex.Message)) strMsg = ex.Message;
+				strMsg = StrUtil.FormatException(ex, null);
 			}
 			finally { m_thKdf = null; } // Before continuation, to enable controls
 

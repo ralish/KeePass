@@ -74,6 +74,16 @@ namespace KeePass.UI
 		private const int FwsNormal = 0;
 		private const int FwsMaximized = 2; // Compatible with FormWindowState
 
+		// The number of characters that Windows draws in the window title bar
+		// and in the tooltip of the task bar item is limited:
+		// Windows XP Classic: 254 /  79,
+		// Windows XP Theme:   259 /  79,
+		// Windows 7 Classic:  254 / 259,
+		// Windows 7 Theme:    259 / 259,
+		// Windows 8.1:        255 / 259,
+		// Windows 11:         255 / 259.
+		internal const int MaxWindowTitleLength = 254;
+
 		private static bool g_bVistaStyleLists = false;
 		public static bool VistaStyleListsSupported
 		{

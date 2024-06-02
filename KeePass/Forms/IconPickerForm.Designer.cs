@@ -34,7 +34,7 @@
 			this.m_lblSeparator = new System.Windows.Forms.Label();
 			this.m_btnCustomAdd = new System.Windows.Forms.Button();
 			this.m_btnCustomDelete = new System.Windows.Forms.Button();
-			this.m_btnCustomExport = new System.Windows.Forms.Button();
+			this.m_btnCustomMore = new System.Windows.Forms.Button();
 			this.m_btnCancel = new System.Windows.Forms.Button();
 			this.m_lblFind = new System.Windows.Forms.Label();
 			this.m_tbFind = new System.Windows.Forms.TextBox();
@@ -104,15 +104,15 @@
 			this.m_btnCustomDelete.UseVisualStyleBackColor = true;
 			this.m_btnCustomDelete.Click += new System.EventHandler(this.OnBtnCustomRemove);
 			// 
-			// m_btnCustomExport
+			// m_btnCustomMore
 			// 
-			this.m_btnCustomExport.Location = new System.Drawing.Point(193, 398);
-			this.m_btnCustomExport.Name = "m_btnCustomExport";
-			this.m_btnCustomExport.Size = new System.Drawing.Size(75, 23);
-			this.m_btnCustomExport.TabIndex = 6;
-			this.m_btnCustomExport.Text = "&Export...";
-			this.m_btnCustomExport.UseVisualStyleBackColor = true;
-			this.m_btnCustomExport.Click += new System.EventHandler(this.OnBtnCustomSave);
+			this.m_btnCustomMore.Location = new System.Drawing.Point(193, 398);
+			this.m_btnCustomMore.Name = "m_btnCustomMore";
+			this.m_btnCustomMore.Size = new System.Drawing.Size(75, 23);
+			this.m_btnCustomMore.TabIndex = 6;
+			this.m_btnCustomMore.Text = "&More...";
+			this.m_btnCustomMore.UseVisualStyleBackColor = true;
+			this.m_btnCustomMore.Click += new System.EventHandler(this.OnBtnCustomMore);
 			// 
 			// m_btnCancel
 			// 
@@ -179,7 +179,7 @@
 			this.Controls.Add(this.m_tbFind);
 			this.Controls.Add(this.m_lblFind);
 			this.Controls.Add(this.m_btnCancel);
-			this.Controls.Add(this.m_btnCustomExport);
+			this.Controls.Add(this.m_btnCustomMore);
 			this.Controls.Add(this.m_btnCustomDelete);
 			this.Controls.Add(this.m_btnCustomAdd);
 			this.Controls.Add(this.m_lblSeparator);
@@ -213,7 +213,7 @@
 		private System.Windows.Forms.Label m_lblSeparator;
 		private System.Windows.Forms.Button m_btnCustomAdd;
 		private System.Windows.Forms.Button m_btnCustomDelete;
-		private System.Windows.Forms.Button m_btnCustomExport;
+		private System.Windows.Forms.Button m_btnCustomMore;
 		private System.Windows.Forms.Button m_btnCancel;
 		private System.Windows.Forms.Label m_lblFind;
 		private System.Windows.Forms.TextBox m_tbFind;

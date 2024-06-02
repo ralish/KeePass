@@ -207,8 +207,8 @@ namespace KeePass.Forms
 				}
 				catch(Exception ex)
 				{
-					string strMsg = KPRes.Field + @" '" + pi.DisplayName +
-						@"':" + MessageService.NewLine + ex.Message;
+					string strMsg = KPRes.Field + " '" + pi.DisplayName + "':" +
+						MessageService.NewLine + StrUtil.FormatException(ex, null);
 					// if(!VistaTaskDialog.ShowMessageBox(strMsg, KPRes.ValidationFailed,
 					//	PwDefs.ShortProductName, VtdIcon.Warning, this))
 					MessageService.ShowWarning(strMsg);
@@ -242,21 +242,9 @@ namespace KeePass.Forms
 				if(!IOConnection.FileExists(m_ioc, true))
 					throw new FileNotFoundException();
 			}
-			catch(Exception exTest)
+			catch(Exception ex)
 			{
-				if(Program.CommandLineArgs[AppDefs.CommandLineOptions.Debug] != null)
-					MessageService.ShowWarningExcp(m_ioc.GetDisplayName(), exTest);
-				else
-				{
-					string strError = exTest.Message;
-					if((exTest.InnerException != null) &&
-						!string.IsNullOrEmpty(exTest.InnerException.Message))
-						strError += MessageService.NewParagraph +
-							exTest.InnerException.Message;
-
-					MessageService.ShowWarning(m_ioc.GetDisplayName(), strError);
-				}
-
+				MessageService.ShowWarning(m_ioc.GetDisplayName(), ex);
 				bResult = false;
 			}
 

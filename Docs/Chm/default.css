@@ -355,10 +355,15 @@ td.helptopheader {
 
 /* --------------------------------------------------------------------- */
 
-div.tipdiv {
+div.tipdiv, div.tipdiv75 {
 	background-color: #FFFFE0;
-	padding: 1px 1px 1px 1px;
+	padding: 1px 2px 1px 2px;
 	border: 1px solid #000000;
+}
+
+div.tipdiv75 {
+	width: 75%;
+	margin: 0px auto 0px auto;
 }
 
 .box100 {

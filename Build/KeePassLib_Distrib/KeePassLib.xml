@@ -110,11 +110,16 @@
         </member>
         <member name="F:KeePassLib.Serialization.KdbxFile.FileVersion32">
             <summary>
-            Maximum supported version of database files.
-            KeePass 2.07 has version 1.01, 2.08 has 1.02, 2.09 has 2.00,
-            2.10 has 2.02, 2.11 has 2.04, 2.15 has 3.00, 2.20 has 3.01.
-            The first 2 bytes are critical (i.e. loading will fail, if the
-            file version is too high), the last 2 bytes are informational.
+            Maximum supported version of database files. The high word is the
+            major version, and the low word is the minor version.
+            An application can load the file if it supports the major version.
+            If the minor version of the file is greater than the one that the
+            application supports, the application may try to load the file,
+            ignoring any unknown elements. Certain data may be lost in this
+            case, thus showing a confirmation/warning is recommended.
+            KeePass version - format version:
+            2.00 - 1.0, 2.07 - 1.1, 2.08 - 1.2, 2.09 - 2.0, 2.11 - 2.4,
+            2.15 - 3.0, 2.20 - 3.1, 2.35 - 4.0, 2.48 - 4.1.
             </summary>
         </member>
         <member name="M:KeePassLib.Serialization.KdbxFile.Load(System.String,KeePassLib.Serialization.KdbxFormat,KeePassLib.Interfaces.IStatusLogger)">
@@ -868,9 +873,9 @@
         </member>
         <member name="M:KeePassLib.Utility.StrUtil.FormatException(System.Exception)">
             <summary>
-            Format an exception and convert it to a string.
+            Convert an exception to a detailed string.
             </summary>
-            <param name="excp"><c>Exception</c> to convert/format.</param>
+            <param name="ex"><c>Exception</c> to convert/format.</param>
             <returns>String representing the exception.</returns>
         </member>
         <member name="M:KeePassLib.Utility.StrUtil.SafeXmlString(System.String)">

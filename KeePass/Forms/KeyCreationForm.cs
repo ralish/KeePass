@@ -66,11 +66,11 @@ namespace KeePass.Forms
 			get { return m_pKey; }
 		}
 
-		private GAction m_fInvokeAfterClose = null;
-		public GAction InvokeAfterClose
-		{
-			get { return m_fInvokeAfterClose; }
-		}
+		// Do not support continuation, because users may wrongly think that
+		// the master key has been changed (despite explanatory dialog text).
+		// https://sourceforge.net/p/keepass/discussion/329221/thread/24cddf6304/
+		// private GAction m_fInvokeAfterClose = null;
+		// public GAction InvokeAfterClose { get { return m_fInvokeAfterClose; } }
 
 		public KeyCreationForm()
 		{
@@ -107,15 +107,15 @@ namespace KeePass.Forms
 			{
 				KeyCreationFormResult rEx = new KeyCreationFormResult();
 				rEx.CompositeKey = f.CompositeKey;
-				rEx.InvokeAfterClose = f.InvokeAfterClose;
+				// rEx.InvokeAfterClose = f.InvokeAfterClose;
 				return rEx;
 			};
 
 			DialogResult dr = ProtectedDialog.ShowDialog<KeyCreationForm,
 				KeyCreationFormResult>(bSecDesk, fConstruct, fResultBuilder, out r);
 
-			GAction fIac = ((r != null) ? r.InvokeAfterClose : null);
-			if(fIac != null) fIac();
+			// GAction fIac = ((r != null) ? r.InvokeAfterClose : null);
+			// if(fIac != null) fIac();
 
 			return dr;
 		}
@@ -309,35 +309,44 @@ namespace KeePass.Forms
 			UpdateUIState();
 		}
 
+		private bool EnsureNormalDesktop()
+		{
+			if(!m_bSecureDesktop) return true;
+
+			MessageService.ShowWarning(KPRes.SecDeskOpUnsupported);
+			return false;
+		}
+
 		private void OnClickKeyFileCreate(object sender, EventArgs e)
 		{
-			IOConnectionInfo ioc = m_ioInfo;
-			bool bSecDesk = m_bSecureDesktop;
+			// if(!EnsureNormalDesktop()) return;
 
-			GAction f = delegate()
+			// IOConnectionInfo ioc = m_ioInfo;
+			// bool bSecDesk = m_bSecureDesktop;
+			// GAction f = delegate() {
+
+			KeyFileCreationForm dlg = new KeyFileCreationForm();
+			dlg.InitEx(m_ioInfo);
+			dlg.SecureDesktopMode = m_bSecureDesktop;
+
+			DialogResult dr = dlg.ShowDialog();
+			if(dr == DialogResult.OK) // && !bSecDesk)
 			{
-				KeyFileCreationForm dlg = new KeyFileCreationForm();
-				dlg.InitEx(ioc);
-
-				DialogResult dr = dlg.ShowDialog();
-				if((dr == DialogResult.OK) && !bSecDesk)
+				string strFile = dlg.ResultFile;
+				if(!string.IsNullOrEmpty(strFile))
 				{
-					string strFile = dlg.ResultFile;
-					if(!string.IsNullOrEmpty(strFile))
-					{
-						m_cmbKeyFile.Items.Add(strFile);
-						m_cmbKeyFile.SelectedIndex = m_cmbKeyFile.Items.Count - 1;
+					m_cmbKeyFile.Items.Add(strFile);
+					m_cmbKeyFile.SelectedIndex = m_cmbKeyFile.Items.Count - 1;
 
-						UpdateUIState();
-					}
-					else { Debug.Assert(false); }
+					UpdateUIState();
 				}
+				else { Debug.Assert(false); }
+			}
 
-				UIUtil.DestroyForm(dlg);
-			};
+			UIUtil.DestroyForm(dlg);
 
-			ProtectedDialog.ContinueOnNormalDesktop(f, this, ref m_fInvokeAfterClose,
-				bSecDesk);
+			// ProtectedDialog.ContinueOnNormalDesktop(f, this,
+			//	ref m_fInvokeAfterClose, bSecDesk);
 		}
 
 		private void OnClickKeyFileBrowse(object sender, EventArgs e)
@@ -372,10 +381,14 @@ namespace KeePass.Forms
 
 		private void ShowHelpEx(string strTopic, string strSection)
 		{
-			GAction f = delegate() { AppHelp.ShowHelp(strTopic, strSection); };
+			if(!EnsureNormalDesktop()) return;
 
-			ProtectedDialog.ContinueOnNormalDesktop(f, this, ref m_fInvokeAfterClose,
-				m_bSecureDesktop);
+			// GAction f = delegate() {
+
+			AppHelp.ShowHelp(strTopic, strSection);
+
+			// ProtectedDialog.ContinueOnNormalDesktop(f, this,
+			//	ref m_fInvokeAfterClose, m_bSecureDesktop);
 		}
 
 		private void OnBtnHelp(object sender, EventArgs e)

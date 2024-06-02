@@ -182,7 +182,7 @@ namespace KeePass.DataExchange.Formats
 							break;
 
 						case "favorite":
-							if(StrUtil.StringToBoolEx(strValue).GetValueOrDefault(false))
+							if(StrUtil.StringToBool(strValue))
 								pe.AddTag(PwDefs.FavoriteTag);
 							break;
 

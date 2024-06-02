@@ -53,12 +53,11 @@ namespace TrlUtil
 			try
 			{
 				ConfigureDpi();
-
 				Application.EnableVisualStyles();
 				Application.SetCompatibleTextRenderingDefault(false);
 
 				KeePass.Program.EnableTranslation = false; // We need English
-				if(!KeePass.Program.CommonInit()) return;
+				KeePass.Program.CommonInitialize();
 
 				m_cfg = (TceConfig.Load() ?? new TceConfig());
 
@@ -67,7 +66,7 @@ namespace TrlUtil
 			catch(Exception ex)
 			{
 				MessageBox.Show(ex.Message, TuDefs.ProductName,
-					MessageBoxButtons.OK, MessageBoxIcon.Warning);
+					MessageBoxButtons.OK, MessageBoxIcon.Error);
 			}
 
 			TceConfig.Save(m_cfg);

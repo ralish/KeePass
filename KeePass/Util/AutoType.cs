@@ -38,7 +38,6 @@ using KeePassLib;
 using KeePassLib.Collections;
 using KeePassLib.Delegates;
 using KeePassLib.Resources;
-using KeePassLib.Security;
 using KeePassLib.Utility;
 
 using NativeLib = KeePassLib.Native.NativeLib;
@@ -100,15 +99,15 @@ namespace KeePass.Util
 
 		internal static void InitStatic()
 		{
-			try
-			{
-				// SendKeys is not used anymore, thus the following is
-				// not required:
-				// // Enable new SendInput method; see
-				// // https://msdn.microsoft.com/en-us/library/system.windows.forms.sendkeys.aspx
-				// ConfigurationManager.AppSettings.Set("SendKeys", "SendInput");
-			}
-			catch(Exception) { Debug.Assert(false); }
+			// try
+			// {
+			//	// SendKeys is not used anymore, thus the following is
+			//	// not required:
+			//	// Enable new SendInput method; see
+			//	// https://msdn.microsoft.com/en-us/library/system.windows.forms.sendkeys.aspx
+			//	ConfigurationManager.AppSettings.Set("SendKeys", "SendInput");
+			// }
+			// catch(Exception) { Debug.Assert(false); }
 		}
 
 		internal static bool IsMatchWindow(string strWindow, string strFilter)
@@ -185,8 +184,7 @@ namespace KeePass.Util
 			// string strError = ValidateAutoTypeSequence(args.Sequence);
 			// if(!string.IsNullOrEmpty(strError))
 			// {
-			//	MessageService.ShowWarning(args.Sequence +
-			//		MessageService.NewParagraph + strError);
+			//	MessageService.ShowWarning(args.Sequence, strError);
 			//	return false;
 			// }
 
@@ -195,20 +193,16 @@ namespace KeePass.Util
 			if(AutoType.FilterSendPre != null) AutoType.FilterSendPre(null, args);
 			if(AutoType.FilterSend != null) AutoType.FilterSend(null, args);
 
-			if(args.Sequence.Length > 0)
+			if(args.Sequence.Length != 0)
 			{
-				string strError = null;
-				try { SendInputEx.SendKeysWait(args.Sequence, args.SendObfuscated); }
-				catch(SecurityException exSec) { strError = exSec.Message; }
-				catch(Exception ex)
-				{
-					strError = args.Sequence + MessageService.NewParagraph +
-						ex.Message;
-				}
+				string strSeqR = args.Sequence;
+				Exception exR = null;
+				try { SendInputEx.SendKeysWait(strSeqR, args.SendObfuscated); }
+				catch(Exception ex) { exR = ex; }
 
 				if(AutoType.SendPost != null) AutoType.SendPost(null, args);
 
-				if(!string.IsNullOrEmpty(strError))
+				if(exR != null)
 				{
 					try
 					{
@@ -218,7 +212,9 @@ namespace KeePass.Util
 					}
 					catch(Exception) { Debug.Assert(false); }
 
-					MessageService.ShowWarning(strError);
+					if(!PwDefs.DebugMode || !AppPolicy.Current.UnhidePasswords)
+						strSeqR = null;
+					MessageService.ShowWarning(strSeqR, exR);
 				}
 			}
 
@@ -396,8 +392,8 @@ namespace KeePass.Util
 			lSeq.Add(strSeq); // Non-canonical version
 		}
 
-		private const string StrBraceOpen = @"{1E1F63AB-2F63-4B60-ADBA-7F38B8D7778E}";
-		private const string StrBraceClose = @"{34D698D7-CEBF-4AF0-87BF-DC1B1F5E95A0}";
+		private const string StrBraceOpen = "1E1F63AB-2F63-4B60-ADBA-7F38B8D7778E";
+		private const string StrBraceClose = "34D698D7-CEBF-4AF0-87BF-DC1B1F5E95A0";
 		private static string CanonicalizeSeq(string strSeq)
 		{
 			// Preprocessing: balance braces
@@ -638,8 +634,8 @@ namespace KeePass.Util
 			Debug.Assert(strSequence != null);
 
 			string strSeq = strSequence;
-			strSeq = strSeq.Replace(@"{{}", string.Empty);
-			strSeq = strSeq.Replace(@"{}}", string.Empty);
+			strSeq = strSeq.Replace("{{}", string.Empty);
+			strSeq = strSeq.Replace("{}}", string.Empty);
 
 			int cBrackets = 0;
 			for(int c = 0; c < strSeq.Length; ++c)
@@ -652,7 +648,7 @@ namespace KeePass.Util
 			}
 			if(cBrackets != 0) return KPRes.AutoTypeSequenceInvalid;
 
-			if(strSeq.IndexOf(@"{}") >= 0) return KPRes.AutoTypeSequenceInvalid;
+			if(strSeq.IndexOf("{}") >= 0) return KPRes.AutoTypeSequenceInvalid;
 
 			try
 			{
@@ -662,12 +658,12 @@ namespace KeePass.Util
 				foreach(Match m in matches)
 				{
 					string strValue = m.Value;
-					if(strValue.StartsWith(@"{s:", StrUtil.CaseIgnoreCmp))
+					if(strValue.StartsWith("{S:", StrUtil.CaseIgnoreCmp))
 						return (KPRes.AutoTypeUnknownPlaceholder +
 							MessageService.NewLine + strValue);
 				}
 			}
-			catch(Exception ex) { Debug.Assert(false); return ex.Message; }
+			catch(Exception ex) { Debug.Assert(false); return StrUtil.FormatException(ex, null); }
 
 			return null;
 		} */

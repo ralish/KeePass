@@ -68,7 +68,7 @@ namespace KeePass.Util
 			AddStdPattern(l, strHex.Replace(@"{PARAM}", "128"), @"H{32}");
 			AddStdPattern(l, strHex.Replace(@"{PARAM}", "256"), @"H{64}");
 
-			AddStdPattern(l, KPRes.MacAddress, "HH\\-HH\\-HH\\-HH\\-HH\\-HH");
+			AddStdPattern(l, KPRes.MacAddress, "H\\2\\-HH\\-HH\\-HH\\-HH\\-HH");
 
 			return l;
 		}

@@ -20,6 +20,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Text;
 
@@ -28,12 +29,11 @@ using KeePass.Util;
 
 using KeePassLib;
 using KeePassLib.Interfaces;
-using KeePassLib.Security;
 using KeePassLib.Utility;
 
 namespace KeePass.DataExchange.Formats
 {
-	// 1.12-2022.5.1+
+	// 1.12-2024.4.3+
 	internal sealed class BitwardenJson112 : FileFormatProvider
 	{
 		public override bool SupportsImport { get { return true; } }
@@ -49,11 +49,10 @@ namespace KeePass.DataExchange.Formats
 			using(StreamReader sr = new StreamReader(sInput, StrUtil.Utf8, true))
 			{
 				string str = sr.ReadToEnd();
-				if(!string.IsNullOrEmpty(str))
-				{
-					CharStream cs = new CharStream(str);
-					ImportRoot(new JsonObject(cs), pwStorage);
-				}
+				if(string.IsNullOrEmpty(str)) return;
+
+				CharStream cs = new CharStream(str);
+				ImportRoot(new JsonObject(cs), pwStorage);
 			}
 		}
 
@@ -197,7 +196,9 @@ namespace KeePass.DataExchange.Formats
 
 			int iYear, iMonth;
 			string strYear = (jo.GetValue<string>("expYear") ?? string.Empty);
-			int.TryParse(strYear, out iYear);
+			if(!int.TryParse(strYear, out iYear)) iYear = -1;
+			if((iYear >= 0) && (iYear <= 99))
+				iYear = CultureInfo.CurrentCulture.Calendar.ToFourDigitYear(iYear);
 			if((iYear >= 1) && (iYear <= 9999))
 			{
 				string strMonth = (jo.GetValue<string>("expMonth") ?? string.Empty);

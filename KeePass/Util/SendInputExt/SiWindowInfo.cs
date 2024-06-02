@@ -163,7 +163,8 @@ namespace KeePass.Util.SendInputExt
 
 			if(g_vProcessNamesVMs == null)
 				g_vProcessNamesVMs = new string[] {
-					"MSTSC", // Remote Desktop Connection client
+					"MSTSC", // Remote Desktop Connection client (Windows)
+					"MSRDC", // Remote Desktop client (WSL)
 					"VirtualBox", // Oracle VirtualBox <= 5
 					"VirtualBoxVM", // Oracle VirtualBox >= 6
 					"VpxClient", // VMware vSphere client

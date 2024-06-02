@@ -20,7 +20,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
 
@@ -286,7 +285,7 @@ namespace KeePass.Util
 				IntPtr h = NativeMethods.GetForegroundWindowHandle();
 				if(h != f.Handle) return false;
 
-				HotKeyControlEx c = (f.ActiveControl as HotKeyControlEx);
+				HotKeyControlEx c = (UIUtil.GetActiveControl(f) as HotKeyControlEx);
 				if(c == null) return false;
 
 				Keys k;

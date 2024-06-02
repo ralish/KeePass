@@ -23,12 +23,10 @@
 #endif
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Reflection;
@@ -54,12 +52,10 @@ using KeePass.Util.XmlSerialization;
 
 using KeePassLib;
 using KeePassLib.Cryptography;
-using KeePassLib.Cryptography.Cipher;
 using KeePassLib.Cryptography.PasswordGenerator;
 using KeePassLib.Delegates;
 using KeePassLib.Keys;
 using KeePassLib.Resources;
-using KeePassLib.Security;
 using KeePassLib.Serialization;
 using KeePassLib.Translation;
 using KeePassLib.Utility;
@@ -70,30 +66,13 @@ namespace KeePass
 {
 	public static class Program
 	{
-		private const string m_strWndMsgID = "EB2FE38E1A6A4A138CF561442F1CF25A";
+		private const string StrWndMsgID = "EB2FE38E1A6A4A138CF561442F1CF25A";
 
-		private static CommandLineArgs m_cmdLineArgs = null;
-		private static Random m_rndGlobal = null;
-		private static int m_nAppMessage = 0;
-		private static MainForm m_formMain = null;
-		private static AppConfigEx m_appConfig = null;
-		private static KeyProviderPool m_keyProviderPool = null;
-		private static KeyValidatorPool m_keyValidatorPool = null;
-		private static FileFormatPool m_fmtPool = null;
-		private static KPTranslation m_kpTranslation = new KPTranslation();
-		private static TempFilesPool m_tempFilesPool = null;
-		private static EcasPool m_ecasPool = null;
-		private static CustomPwGeneratorPool m_pwGenPool = null;
-		private static ColumnProviderPool m_colProvPool = null;
-
-		private static bool m_bDesignMode = true;
-#if DEBUG
-		private static bool m_bDesignModeQueried = false;
-#endif
-		private static bool m_bEnableTranslation = true;
+		private static bool g_bMain = false;
+		private static Mutex g_mGlobalNotify = null;
 
 #if KP_DEVSNAP
-		private static bool m_bAsmResReg = false;
+		private static bool g_bAsmResReg = false;
 #endif
 
 		public enum AppMessage // int
@@ -111,88 +90,110 @@ namespace KeePass
 			IpcByFile1 = 10 // Handled by 1 other instance
 		}
 
+		private static CommandLineArgs g_cmdLineArgs = null;
 		public static CommandLineArgs CommandLineArgs
 		{
 			get
 			{
-				if(m_cmdLineArgs == null) // No assert (KeePass as library)
-					m_cmdLineArgs = new CommandLineArgs(null);
+				if(g_cmdLineArgs == null)
+				{
+					Debug.Assert(!g_bMain);
+					g_cmdLineArgs = new CommandLineArgs(null);
+				}
 
-				return m_cmdLineArgs;
+				return g_cmdLineArgs;
 			}
 		}
 
+		private static Random g_rndGlobal = null;
 		public static Random GlobalRandom
 		{
-			get { return m_rndGlobal; }
+			get
+			{
+				if(g_rndGlobal == null) g_rndGlobal = CryptoRandom.NewWeakRandom();
+				return g_rndGlobal;
+			}
 		}
 
+		private static int g_nAppMessage = 0;
 		public static int ApplicationMessage
 		{
-			get { return m_nAppMessage; }
+			get { Debug.Assert((g_nAppMessage != 0) || !g_bMain); return g_nAppMessage; }
 		}
 
+		private static MainForm g_formMain = null;
 		public static MainForm MainForm
 		{
-			get { return m_formMain; }
+			get { return g_formMain; }
 		}
 
+		private static AppConfigEx g_appConfig = null;
 		public static AppConfigEx Config
 		{
 			get
 			{
-				if(m_appConfig == null) { Debug.Assert(false); m_appConfig = new AppConfigEx(); }
-				return m_appConfig;
+				if(g_appConfig == null) { Debug.Assert(false); g_appConfig = new AppConfigEx(); }
+				return g_appConfig;
 			}
 		}
 
+		private static KeyProviderPool g_keyProviderPool = null;
 		public static KeyProviderPool KeyProviderPool
 		{
 			get
 			{
-				if(m_keyProviderPool == null) m_keyProviderPool = new KeyProviderPool();
-				return m_keyProviderPool;
+				if(g_keyProviderPool == null) g_keyProviderPool = new KeyProviderPool();
+				return g_keyProviderPool;
 			}
 		}
 
+		private static KeyValidatorPool g_keyValidatorPool = null;
 		public static KeyValidatorPool KeyValidatorPool
 		{
 			get
 			{
-				if(m_keyValidatorPool == null) m_keyValidatorPool = new KeyValidatorPool();
-				return m_keyValidatorPool;
+				if(g_keyValidatorPool == null) g_keyValidatorPool = new KeyValidatorPool();
+				return g_keyValidatorPool;
 			}
 		}
 
+		private static FileFormatPool g_fmtPool = null;
 		public static FileFormatPool FileFormatPool
 		{
 			get
 			{
-				if(m_fmtPool == null) m_fmtPool = new FileFormatPool();
-				return m_fmtPool;
+				if(g_fmtPool == null) g_fmtPool = new FileFormatPool();
+				return g_fmtPool;
 			}
 		}
 
+		private static KPTranslation g_kpTranslation = null;
 		public static KPTranslation Translation
 		{
-			get { return m_kpTranslation; }
+			get
+			{
+				if(g_kpTranslation == null) g_kpTranslation = new KPTranslation();
+				return g_kpTranslation;
+			}
 		}
 
+		private static TempFilesPool g_tempFilesPool = null;
 		public static TempFilesPool TempFilesPool
 		{
 			get
 			{
-				if(m_tempFilesPool == null) m_tempFilesPool = new TempFilesPool();
-				return m_tempFilesPool;
+				if(g_tempFilesPool == null) g_tempFilesPool = new TempFilesPool();
+				return g_tempFilesPool;
 			}
 		}
 
-		public static EcasPool EcasPool // Construct on first access
+		private static EcasPool g_ecasPool = null;
+		public static EcasPool EcasPool
 		{
 			get
 			{
-				if(m_ecasPool == null) m_ecasPool = new EcasPool(true);
-				return m_ecasPool;
+				if(g_ecasPool == null) g_ecasPool = new EcasPool(true);
+				return g_ecasPool;
 			}
 		}
 
@@ -201,21 +202,23 @@ namespace KeePass
 			get { return Program.Config.Application.TriggerSystem; }
 		}
 
+		private static CustomPwGeneratorPool g_pwGenPool = null;
 		public static CustomPwGeneratorPool PwGeneratorPool
 		{
 			get
 			{
-				if(m_pwGenPool == null) m_pwGenPool = new CustomPwGeneratorPool();
-				return m_pwGenPool;
+				if(g_pwGenPool == null) g_pwGenPool = new CustomPwGeneratorPool();
+				return g_pwGenPool;
 			}
 		}
 
+		private static ColumnProviderPool g_colProvPool = null;
 		public static ColumnProviderPool ColumnProviderPool
 		{
 			get
 			{
-				if(m_colProvPool == null) m_colProvPool = new ColumnProviderPool();
-				return m_colProvPool;
+				if(g_colProvPool == null) g_colProvPool = new ColumnProviderPool();
+				return g_colProvPool;
 			}
 		}
 
@@ -224,21 +227,26 @@ namespace KeePass
 			get { return KeePass.Properties.Resources.ResourceManager; }
 		}
 
+		private static bool g_bEnableTranslation = true;
+		public static bool EnableTranslation
+		{
+			get { return g_bEnableTranslation; }
+			set { g_bEnableTranslation = value; }
+		}
+
+		private static bool g_bDesignMode = true;
+#if DEBUG
+		private static bool g_bDesignModeQueried = false;
+#endif
 		public static bool DesignMode
 		{
 			get
 			{
 #if DEBUG
-				m_bDesignModeQueried = true;
+				g_bDesignModeQueried = true;
 #endif
-				return m_bDesignMode;
+				return g_bDesignMode;
 			}
-		}
-
-		public static bool EnableTranslation
-		{
-			get { return m_bEnableTranslation; }
-			set { m_bEnableTranslation = value; }
 		}
 
 		/// <summary>
@@ -247,31 +255,41 @@ namespace KeePass
 		[STAThread]
 		public static void Main(string[] args)
 		{
-#if DEBUG
-			MainPriv(args);
-#else
 			try { MainPriv(args); }
+#if !DEBUG
 			catch(Exception ex) { ShowFatal(ex); }
 #endif
+			finally
+			{
+				try { CommonTerminate(); }
+				catch(Exception) { Debug.Assert(false); }
+
+				GC.KeepAlive(g_mGlobalNotify);
+			}
 		}
 
 		private static void MainPriv(string[] args)
 		{
+			g_bMain = true;
+			g_bDesignMode = false; // Designer doesn't call Main method
 #if DEBUG
 			// Program.DesignMode should not be queried before executing
 			// Main (e.g. by a static Control) when running the program
 			// normally
-			Debug.Assert(!m_bDesignModeQueried);
+			Debug.Assert(!g_bDesignModeQueried);
 #endif
-			m_bDesignMode = false; // Designer doesn't call Main method
+			InitAppContext();
 
-			m_cmdLineArgs = new CommandLineArgs(args);
+			g_cmdLineArgs = new CommandLineArgs(args);
+
+			if(g_cmdLineArgs[AppDefs.CommandLineOptions.Debug] != null)
+				PwDefs.DebugMode = true;
 
 			// Before loading the configuration
-			string strWa = m_cmdLineArgs[AppDefs.CommandLineOptions.WorkaroundDisable];
+			string strWa = g_cmdLineArgs[AppDefs.CommandLineOptions.WorkaroundDisable];
 			if(!string.IsNullOrEmpty(strWa))
 				MonoWorkarounds.SetEnabled(strWa, false);
-			strWa = m_cmdLineArgs[AppDefs.CommandLineOptions.WorkaroundEnable];
+			strWa = g_cmdLineArgs[AppDefs.CommandLineOptions.WorkaroundEnable];
 			if(!string.IsNullOrEmpty(strWa))
 				MonoWorkarounds.SetEnabled(strWa, true);
 
@@ -288,7 +306,7 @@ namespace KeePass
 			string strInitialWorkDir = WinUtil.GetWorkingDirectory();
 #endif
 
-			if(!CommonInit()) { CommonTerminate(); return; }
+			CommonInitialize();
 
 			KdbxFile.ConfirmOpenUnknownVersion = delegate()
 			{
@@ -303,78 +321,70 @@ namespace KeePass
 					false, MessageBoxIcon.Warning);
 			};
 
-			if(m_appConfig.Application.Start.PluginCacheClearOnce)
+			if(g_appConfig.Application.Start.PluginCacheClearOnce)
 			{
 				PlgxCache.Clear();
-				m_appConfig.Application.Start.PluginCacheClearOnce = false;
+				g_appConfig.Application.Start.PluginCacheClearOnce = false;
 				AppConfigSerializer.Save();
 			}
 
-			if(m_cmdLineArgs[AppDefs.CommandLineOptions.FileExtRegister] != null)
+			if(g_cmdLineArgs[AppDefs.CommandLineOptions.FileExtRegister] != null)
 			{
 				ShellUtil.RegisterExtension(AppDefs.FileExtension.FileExt,
 					AppDefs.FileExtension.FileExtId, KPRes.FileExtName2,
 					WinUtil.GetExecutable(), PwDefs.ShortProductName, false);
-				MainCleanUp();
 				return;
 			}
-			if(m_cmdLineArgs[AppDefs.CommandLineOptions.FileExtUnregister] != null)
+			if(g_cmdLineArgs[AppDefs.CommandLineOptions.FileExtUnregister] != null)
 			{
 				ShellUtil.UnregisterExtension(AppDefs.FileExtension.FileExt,
 					AppDefs.FileExtension.FileExtId);
-				MainCleanUp();
 				return;
 			}
-			if(m_cmdLineArgs[AppDefs.CommandLineOptions.PreLoad] != null)
+			if(g_cmdLineArgs[AppDefs.CommandLineOptions.PreLoad] != null)
 			{
 				// All important .NET assemblies are in memory now already
 				try { SelfTest.Perform(); }
 				catch(Exception) { Debug.Assert(false); }
-				MainCleanUp();
 				return;
 			}
-			/* if(m_cmdLineArgs[AppDefs.CommandLineOptions.PreLoadRegister] != null)
+			/* if(g_cmdLineArgs[AppDefs.CommandLineOptions.PreLoadRegister] != null)
 			{
 				string strPreLoadPath = WinUtil.GetExecutable().Trim();
 				if(!strPreLoadPath.StartsWith("\""))
 					strPreLoadPath = "\"" + strPreLoadPath + "\"";
 				ShellUtil.RegisterPreLoad(AppDefs.PreLoadName, strPreLoadPath,
 					"--" + AppDefs.CommandLineOptions.PreLoad, true);
-				MainCleanUp();
 				return;
 			}
-			if(m_cmdLineArgs[AppDefs.CommandLineOptions.PreLoadUnregister] != null)
+			if(g_cmdLineArgs[AppDefs.CommandLineOptions.PreLoadUnregister] != null)
 			{
 				ShellUtil.RegisterPreLoad(AppDefs.PreLoadName, string.Empty,
 					string.Empty, false);
-				MainCleanUp();
 				return;
 			} */
-			if((m_cmdLineArgs[AppDefs.CommandLineOptions.Help] != null) ||
-				(m_cmdLineArgs[AppDefs.CommandLineOptions.HelpLong] != null))
+			if((g_cmdLineArgs[AppDefs.CommandLineOptions.Help] != null) ||
+				(g_cmdLineArgs[AppDefs.CommandLineOptions.HelpLong] != null))
 			{
 				AppHelp.ShowHelp(AppDefs.HelpTopics.CommandLine, null);
-				MainCleanUp();
 				return;
 			}
-			if(m_cmdLineArgs[AppDefs.CommandLineOptions.ConfigSetUrlOverride] != null)
+			if(g_cmdLineArgs[AppDefs.CommandLineOptions.ConfigSetUrlOverride] != null)
 			{
-				Program.Config.Integration.UrlOverride = m_cmdLineArgs[
+				Program.Config.Integration.UrlOverride = g_cmdLineArgs[
 					AppDefs.CommandLineOptions.ConfigSetUrlOverride];
 				Program.Config.Integration.UrlOverrideEnabled = true;
 				EnforceAndSave(AceSections.UrlOverride);
-				MainCleanUp();
 				return;
 			}
-			if(m_cmdLineArgs[AppDefs.CommandLineOptions.ConfigClearUrlOverride] != null)
+			if(g_cmdLineArgs[AppDefs.CommandLineOptions.ConfigClearUrlOverride] != null)
 			{
 				Program.Config.Integration.UrlOverride = string.Empty;
 				Program.Config.Integration.UrlOverrideEnabled = false;
 				EnforceAndSave(AceSections.UrlOverride);
-				MainCleanUp();
 				return;
 			}
-			if(m_cmdLineArgs[AppDefs.CommandLineOptions.ConfigGetUrlOverride] != null)
+			if(g_cmdLineArgs[AppDefs.CommandLineOptions.ConfigGetUrlOverride] != null)
 			{
 				try
 				{
@@ -385,77 +395,67 @@ namespace KeePass
 					File.WriteAllText(strFileOut, strContent);
 				}
 				catch(Exception) { Debug.Assert(false); }
-				MainCleanUp();
 				return;
 			}
-			if(m_cmdLineArgs[AppDefs.CommandLineOptions.ConfigAddUrlOverride] != null)
+			if(g_cmdLineArgs[AppDefs.CommandLineOptions.ConfigAddUrlOverride] != null)
 			{
-				bool bAct = (m_cmdLineArgs[AppDefs.CommandLineOptions.Activate] != null);
+				bool bAct = (g_cmdLineArgs[AppDefs.CommandLineOptions.Activate] != null);
 				Program.Config.Integration.UrlSchemeOverrides.AddCustomOverride(
-					m_cmdLineArgs[AppDefs.CommandLineOptions.Scheme],
-					m_cmdLineArgs[AppDefs.CommandLineOptions.Value], bAct, bAct);
+					g_cmdLineArgs[AppDefs.CommandLineOptions.Scheme],
+					g_cmdLineArgs[AppDefs.CommandLineOptions.Value], bAct, bAct);
 				EnforceAndSave(AceSections.UrlSchemeOverrides);
-				MainCleanUp();
 				return;
 			}
-			if(m_cmdLineArgs[AppDefs.CommandLineOptions.ConfigRemoveUrlOverride] != null)
+			if(g_cmdLineArgs[AppDefs.CommandLineOptions.ConfigRemoveUrlOverride] != null)
 			{
 				Program.Config.Integration.UrlSchemeOverrides.RemoveCustomOverride(
-					m_cmdLineArgs[AppDefs.CommandLineOptions.Scheme],
-					m_cmdLineArgs[AppDefs.CommandLineOptions.Value]);
+					g_cmdLineArgs[AppDefs.CommandLineOptions.Scheme],
+					g_cmdLineArgs[AppDefs.CommandLineOptions.Value]);
 				EnforceAndSave(AceSections.UrlSchemeOverrides);
-				MainCleanUp();
 				return;
 			}
-			if(m_cmdLineArgs[AppDefs.CommandLineOptions.ConfigSetLanguageFile] != null)
+			if(g_cmdLineArgs[AppDefs.CommandLineOptions.ConfigSetLanguageFile] != null)
 			{
-				Program.Config.Application.LanguageFile = m_cmdLineArgs[
+				Program.Config.Application.LanguageFile = g_cmdLineArgs[
 					AppDefs.CommandLineOptions.ConfigSetLanguageFile];
 				AppConfigSerializer.Save();
-				MainCleanUp();
 				return;
 			}
-			if(AppEnforcedConfig.SetupAsChild()) { MainCleanUp(); return; }
-			if(KeyUtil.KdfPrcTestAsChild()) { MainCleanUp(); return; }
-			if(m_cmdLineArgs[AppDefs.CommandLineOptions.PlgxCreate] != null)
+			if(AppEnforcedConfig.SetupAsChild()) return;
+			if(KeyUtil.KdfPrcTestAsChild()) return;
+			if(g_cmdLineArgs[AppDefs.CommandLineOptions.PlgxCreate] != null)
 			{
 				PlgxPlugin.CreateFromCommandLine();
-				MainCleanUp();
 				return;
 			}
-			if(m_cmdLineArgs[AppDefs.CommandLineOptions.PlgxCreateInfo] != null)
+			if(g_cmdLineArgs[AppDefs.CommandLineOptions.PlgxCreateInfo] != null)
 			{
-				PlgxPlugin.CreateInfoFile(m_cmdLineArgs.FileName);
-				MainCleanUp();
+				PlgxPlugin.CreateInfoFile(g_cmdLineArgs.FileName);
 				return;
 			}
-			if(m_cmdLineArgs[AppDefs.CommandLineOptions.ShowAssemblyInfo] != null)
+			if(g_cmdLineArgs[AppDefs.CommandLineOptions.ShowAssemblyInfo] != null)
 			{
 				MessageService.ShowInfo(Assembly.GetExecutingAssembly().ToString());
-				MainCleanUp();
 				return;
 			}
-			if(m_cmdLineArgs[AppDefs.CommandLineOptions.MakeXmlSerializerEx] != null)
+			if(g_cmdLineArgs[AppDefs.CommandLineOptions.MakeXmlSerializerEx] != null)
 			{
-				XmlSerializerEx.GenerateSerializers(m_cmdLineArgs);
-				MainCleanUp();
+				XmlSerializerEx.GenerateSerializers(g_cmdLineArgs);
 				return;
 			}
-			if(m_cmdLineArgs[AppDefs.CommandLineOptions.MakeXspFile] != null)
+			if(g_cmdLineArgs[AppDefs.CommandLineOptions.MakeXspFile] != null)
 			{
-				XspArchive.CreateFile(m_cmdLineArgs.FileName, m_cmdLineArgs["d"]);
-				MainCleanUp();
+				XspArchive.CreateFile(g_cmdLineArgs.FileName, g_cmdLineArgs["d"]);
 				return;
 			}
-			if(m_cmdLineArgs[AppDefs.CommandLineOptions.Version] != null)
+			if(g_cmdLineArgs[AppDefs.CommandLineOptions.Version] != null)
 			{
 				Console.WriteLine(PwDefs.ShortProductName + " " + PwDefs.VersionString);
 				Console.WriteLine(PwDefs.Copyright);
-				MainCleanUp();
 				return;
 			}
 #if DEBUG
-			if(m_cmdLineArgs[AppDefs.CommandLineOptions.TestGfx] != null)
+			if(g_cmdLineArgs[AppDefs.CommandLineOptions.TestGfx] != null)
 			{
 				List<Image> lImg = new List<Image>
 				{
@@ -473,68 +473,65 @@ namespace KeePass
 			}
 #endif
 			// #if (DEBUG && !KeePassLibSD)
-			// if(m_cmdLineArgs[AppDefs.CommandLineOptions.MakePopularPasswordTable] != null)
+			// if(g_cmdLineArgs[AppDefs.CommandLineOptions.MakePopularPasswordTable] != null)
 			// {
 			//	PopularPasswords.MakeList();
-			//	MainCleanUp();
 			//	return;
 			// }
 			// #endif
 
-			try { m_nAppMessage = NativeMethods.RegisterWindowMessage(m_strWndMsgID); }
+			try { g_nAppMessage = NativeMethods.RegisterWindowMessage(StrWndMsgID); }
 			catch(Exception) { Debug.Assert(NativeLib.IsUnix()); }
 
-			if(m_cmdLineArgs[AppDefs.CommandLineOptions.ExitAll] != null)
+			if(g_cmdLineArgs[AppDefs.CommandLineOptions.ExitAll] != null)
 			{
-				BroadcastAppMessageAndCleanUp(AppMessage.Exit);
+				BroadcastAppMessage(AppMessage.Exit);
 				return;
 			}
-			if(m_cmdLineArgs[AppDefs.CommandLineOptions.AutoType] != null)
+			if(g_cmdLineArgs[AppDefs.CommandLineOptions.AutoType] != null)
 			{
-				BroadcastAppMessageAndCleanUp(AppMessage.AutoType);
+				BroadcastAppMessage(AppMessage.AutoType);
 				return;
 			}
-			if(m_cmdLineArgs[AppDefs.CommandLineOptions.AutoTypePassword] != null)
+			if(g_cmdLineArgs[AppDefs.CommandLineOptions.AutoTypePassword] != null)
 			{
-				BroadcastAppMessageAndCleanUp(AppMessage.AutoTypePassword);
+				BroadcastAppMessage(AppMessage.AutoTypePassword);
 				return;
 			}
-			if(m_cmdLineArgs[AppDefs.CommandLineOptions.AutoTypeSelected] != null)
+			if(g_cmdLineArgs[AppDefs.CommandLineOptions.AutoTypeSelected] != null)
 			{
-				BroadcastAppMessageAndCleanUp(AppMessage.AutoTypeSelected);
+				BroadcastAppMessage(AppMessage.AutoTypeSelected);
 				return;
 			}
-			if(m_cmdLineArgs[AppDefs.CommandLineOptions.OpenEntryUrl] != null)
+			if(g_cmdLineArgs[AppDefs.CommandLineOptions.OpenEntryUrl] != null)
 			{
-				string strEntryUuid = m_cmdLineArgs[AppDefs.CommandLineOptions.Uuid];
+				string strEntryUuid = g_cmdLineArgs[AppDefs.CommandLineOptions.Uuid];
 				if(!string.IsNullOrEmpty(strEntryUuid))
 				{
 					IpcParamEx ipUrl = new IpcParamEx(IpcUtilEx.CmdOpenEntryUrl,
 						strEntryUuid, null, null, null, null);
 					IpcUtilEx.SendGlobalMessage(ipUrl, false);
 				}
-
-				MainCleanUp();
 				return;
 			}
-			if(m_cmdLineArgs[AppDefs.CommandLineOptions.LockAll] != null)
+			if(g_cmdLineArgs[AppDefs.CommandLineOptions.LockAll] != null)
 			{
-				BroadcastAppMessageAndCleanUp(AppMessage.Lock);
+				BroadcastAppMessage(AppMessage.Lock);
 				return;
 			}
-			if(m_cmdLineArgs[AppDefs.CommandLineOptions.UnlockAll] != null)
+			if(g_cmdLineArgs[AppDefs.CommandLineOptions.UnlockAll] != null)
 			{
-				BroadcastAppMessageAndCleanUp(AppMessage.Unlock);
+				BroadcastAppMessage(AppMessage.Unlock);
 				return;
 			}
-			if(m_cmdLineArgs[AppDefs.CommandLineOptions.Cancel] != null)
+			if(g_cmdLineArgs[AppDefs.CommandLineOptions.Cancel] != null)
 			{
-				BroadcastAppMessageAndCleanUp(AppMessage.Cancel);
+				BroadcastAppMessage(AppMessage.Cancel);
 				return;
 			}
 
-			string strIpc = m_cmdLineArgs[AppDefs.CommandLineOptions.IpcEvent];
-			string strIpc1 = m_cmdLineArgs[AppDefs.CommandLineOptions.IpcEvent1];
+			string strIpc = g_cmdLineArgs[AppDefs.CommandLineOptions.IpcEvent];
+			string strIpc1 = g_cmdLineArgs[AppDefs.CommandLineOptions.IpcEvent1];
 			if((strIpc != null) || (strIpc1 != null))
 			{
 				bool bIpc1 = (strIpc1 != null);
@@ -547,105 +544,103 @@ namespace KeePass
 						CommandLineArgs.SafeSerialize(vFlt), null, null, null);
 					IpcUtilEx.SendGlobalMessage(ipcP, bIpc1);
 				}
-
-				MainCleanUp();
 				return;
 			}
 
 			// Mutex mSingleLock = TrySingleInstanceLock(AppDefs.MutexName, true);
 			bool bSingleLock = GlobalMutexPool.CreateMutex(AppDefs.MutexName, true);
-			// if((mSingleLock == null) && m_appConfig.Integration.LimitToSingleInstance)
-			if(!bSingleLock && m_appConfig.Integration.LimitToSingleInstance)
+			// if((mSingleLock == null) && g_appConfig.Integration.LimitToSingleInstance)
+			if(!bSingleLock && g_appConfig.Integration.LimitToSingleInstance)
 			{
 				ActivatePreviousInstance(args);
-				MainCleanUp();
 				return;
 			}
 
-			Mutex mGlobalNotify = TryGlobalInstanceNotify(AppDefs.MutexNameGlobal);
+			g_mGlobalNotify = TryGlobalInstanceNotify(AppDefs.MutexNameGlobal);
 
 			AutoType.InitStatic();
 
-			CustomMessageFilterEx cmfx = new CustomMessageFilterEx();
-			Application.AddMessageFilter(cmfx);
+			CustomMessageFilterEx cmf = new CustomMessageFilterEx();
+			Application.AddMessageFilter(cmf);
 
-#if DEBUG
-			if(m_cmdLineArgs[AppDefs.CommandLineOptions.DebugThrowException] != null)
-				throw new Exception(AppDefs.CommandLineOptions.DebugThrowException);
-
-			m_formMain = new MainForm();
-			Application.Run(m_formMain);
-#else
 			try
 			{
-				if(m_cmdLineArgs[AppDefs.CommandLineOptions.DebugThrowException] != null)
+				if(g_cmdLineArgs[AppDefs.CommandLineOptions.DebugThrowException] != null)
 					throw new Exception(AppDefs.CommandLineOptions.DebugThrowException);
 
-				m_formMain = new MainForm();
-				Application.Run(m_formMain);
+				g_formMain = new MainForm();
+				Application.Run(g_formMain);
 			}
-			catch(Exception exPrg) { ShowFatal(exPrg); }
-#endif
-
-			Application.RemoveMessageFilter(cmfx);
-
-			Debug.Assert(GlobalWindowManager.WindowCount == 0);
-			Debug.Assert(MessageService.CurrentMessageCount == 0);
-
-			MainCleanUp();
+			finally { Application.RemoveMessageFilter(cmf); }
 
 #if DEBUG
 			string strEndWorkDir = WinUtil.GetWorkingDirectory();
 			Debug.Assert(strEndWorkDir.Equals(strInitialWorkDir, StrUtil.CaseIgnoreCmp));
 #endif
 
-			if(mGlobalNotify != null) { GC.KeepAlive(mGlobalNotify); }
-			// if(mSingleLock != null) { GC.KeepAlive(mSingleLock); }
+			// GC.KeepAlive(mSingleLock);
 		}
 
 		/// <summary>
-		/// Common program initialization function that can also be
-		/// used by applications that use KeePass as a library
-		/// (like e.g. KPScript).
+		/// Common initialization method that can also be used by applications
+		/// that use KeePass as a library.
+		/// <c>CommonInitialize</c> may throw an exception, whereas
+		/// <c>CommonInit</c> shows any error and returns a <c>bool</c>.
+		/// <c>CommonInitialize</c> allows a custom error handling/reporting.
+		/// <c>CommonInitialize</c> (or <c>CommonInit</c>) and
+		/// <c>CommonTerminate</c> should be called exactly once.
 		/// </summary>
 		public static bool CommonInit()
 		{
-			m_bDesignMode = false; // Again, for the ones not calling Main
+			try { CommonInitialize(); return true; }
+			catch(Exception ex) { ShowFatal(ex); }
+			return false;
+		}
 
-			m_rndGlobal = CryptoRandom.NewWeakRandom();
+		/// <summary>
+		/// Common initialization method that can also be used by applications
+		/// that use KeePass as a library.
+		/// <c>CommonInitialize</c> may throw an exception, whereas
+		/// <c>CommonInit</c> shows any error and returns a <c>bool</c>.
+		/// <c>CommonInitialize</c> allows a custom error handling/reporting.
+		/// <c>CommonInitialize</c> (or <c>CommonInit</c>) and
+		/// <c>CommonTerminate</c> should be called exactly once.
+		/// </summary>
+		public static void CommonInitialize()
+		{
+			if(!g_bMain)
+			{
+				// Again, for the apps that are not calling Main
+				g_bDesignMode = false;
+				InitAppContext();
+			}
 
 			InitEnvSecurity();
 			// InitEnvWorkarounds();
-			InitAppContext();
 			MonoWorkarounds.Initialize();
 
 			// Do not run as AppX, because of compatibility problems
-			if(WinUtil.IsAppX) return false;
+			if(WinUtil.IsAppX) throw new PlatformNotSupportedException();
 
-			try { SelfTest.TestFipsComplianceProblems(); }
-			catch(Exception exFips)
-			{
-				MessageService.ShowWarning(KPRes.SelfTestFailed, exFips);
-				return false;
-			}
+			SelfTest.TestFipsComplianceProblems();
 
 			// Set global localized strings
 			PwDatabase.LocalizedAppName = PwDefs.ShortProductName;
 			KdbxFile.DetermineLanguageId();
 
-			Debug.Assert(m_appConfig == null);
-			m_appConfig = AppConfigSerializer.Load();
+			Debug.Assert(g_appConfig == null);
+			g_appConfig = AppConfigSerializer.Load();
 
-			if(m_appConfig.Logging.Enabled)
+			if(g_appConfig.Logging.Enabled)
 				AppLogEx.Open(PwDefs.ShortProductName);
 
-			AppPolicy.Current = m_appConfig.Security.Policy.CloneDeep();
+			AppPolicy.Current = g_appConfig.Security.Policy.CloneDeep();
 			AppPolicy.ApplyToConfig();
 
-			if(m_appConfig.Security.ProtectProcessWithDacl)
+			if(g_appConfig.Security.ProtectProcessWithDacl)
 				KeePassLib.Native.NativeMethods.ProtectProcessWithDacl();
 
-			m_appConfig.Apply(AceApplyFlags.All);
+			g_appConfig.Apply(AceApplyFlags.All);
 
 			Program.TriggerSystem.SetToInitialState();
 
@@ -655,63 +650,61 @@ namespace KeePass
 			AppConfigSerializer.CreateBackupIfNecessary();
 
 			AceSections s = AppConfigEx.GetEnabledNonEnforcedSections();
-			if((s != AceSections.None) && !m_appConfig.Meta.PreferUserConfiguration)
+			if((s != AceSections.None) && !g_appConfig.Meta.PreferUserConfiguration)
 			{
-				if(AppConfigEx.EnforceSections(s, m_appConfig, false, false, null, null))
+				if(AppConfigEx.EnforceSections(s, g_appConfig, false, false, null, null))
 					s = AceSections.None;
 			}
 			AppConfigEx.DisableSections(s);
 
 #if KP_DEVSNAP
-			if(!m_bAsmResReg)
+			if(!g_bAsmResReg)
 			{
 				AppDomain.CurrentDomain.AssemblyResolve += Program.AssemblyResolve;
-				m_bAsmResReg = true;
+				g_bAsmResReg = true;
 			}
 			else { Debug.Assert(false); }
 #endif
-
-			return true;
 		}
 
+		/// <summary>
+		/// Common termination method that can also be used by applications
+		/// that use KeePass as a library.
+		/// <c>CommonInitialize</c> (or <c>CommonInit</c>) and
+		/// <c>CommonTerminate</c> should be called exactly once.
+		/// </summary>
 		public static void CommonTerminate()
 		{
-#if DEBUG
-			Debug.Assert(ShutdownBlocker.Instance == null);
+			Debug.Assert(GlobalWindowManager.WindowCount == 0);
+			Debug.Assert(MessageService.CurrentMessageCount == 0);
 			Debug.Assert(!SendInputEx.IsSending);
-			// GC.Collect(); // Force invocation of destructors
+#if DEBUG
+			Debug.Assert(ShutdownBlocker.PrimaryInstance == null);
 #endif
+
+			IpcBroadcast.StopServer();
+			EntryMenu.Destroy();
+			GlobalMutexPool.ReleaseAll();
 
 			AppLogEx.Close();
 
-			if(m_tempFilesPool != null)
+			if(g_tempFilesPool != null)
 			{
-				m_tempFilesPool.Clear(TempClearFlags.All);
-				m_tempFilesPool.WaitForThreads();
+				g_tempFilesPool.Clear(TempClearFlags.All);
+				g_tempFilesPool.WaitForThreads();
 			}
 
 			EnableThemingInScope.StaticDispose();
 			MonoWorkarounds.Terminate();
 
 #if KP_DEVSNAP
-			if(m_bAsmResReg)
+			if(g_bAsmResReg)
 			{
 				AppDomain.CurrentDomain.AssemblyResolve -= Program.AssemblyResolve;
-				m_bAsmResReg = false;
+				g_bAsmResReg = false;
 			}
 			else { Debug.Assert(false); }
 #endif
-		}
-
-		private static void MainCleanUp()
-		{
-			IpcBroadcast.StopServer();
-
-			EntryMenu.Destroy();
-
-			GlobalMutexPool.ReleaseAll();
-
-			CommonTerminate();
 		}
 
 		private static void EnforceAndSave(AceSections s)
@@ -768,8 +761,12 @@ namespace KeePass
 
 				f("Switch.System.Drawing.DontSupportPngFramesInIcons", false); // 4.6
 				f("Switch.System.Drawing.Printing.OptimizePrintPreview", true); // 4.6, optional
+				f("Switch.System.IO.BlockLongPaths", false); // 4.6.2
 				f("Switch.System.IO.Compression.DoNotUseNativeZipLibraryForDecompression", false); // 4.7.2
 				f("Switch.System.IO.Compression.ZipFile.UseBackslash", false); // 4.6.1
+				f("Switch.System.IO.UseLegacyPathHandling", false); // 4.6.2
+				f("Switch.System.Net.DontEnableSchUseStrongCrypto", false); // 4.6
+				f("Switch.System.Net.DontEnableSystemDefaultTlsVersions", false); // 4.7
 				f("Switch.System.Security.Cryptography.AesCryptoServiceProvider.DontCorrectlyResetDecryptor", false); // 4.6.2
 				f("Switch.System.Security.Cryptography.UseLegacyFipsThrow", false); // 4.8
 				f("Switch.System.Windows.Forms.DoNotLoadLatestRichEditControl", false); // 4.7
@@ -790,7 +787,7 @@ namespace KeePass
 				const BindingFlags bf = BindingFlags.Public | BindingFlags.NonPublic |
 					BindingFlags.Static;
 
-				GAction<Type, string, bool> fCheckB = delegate(Type tClass,
+				GAction<Type, string, bool> fCheck = delegate(Type tClass,
 					string strProperty, bool bValue)
 				{
 					PropertyInfo pi = tClass.GetProperty(strProperty, bf);
@@ -820,21 +817,25 @@ namespace KeePass
 					"System.AccessibilityImprovements", false);
 				if(tA == null) { Debug.Assert(false); return; }
 
-				fCheckB(tD, "DontSupportPngFramesInIcons", false);
-				fCheckB(tD, "OptimizePrintPreview", true);
-				fCheckB(tS, "DoNotUseNativeZipLibraryForDecompression", false);
-				fCheckB(tM, "UseLegacyFipsThrow", false);
-				fCheckB(tW, "DoNotLoadLatestRichEditControl", false);
-				fCheckB(tW, "DoNotSupportSelectAllShortcutInMultilineTextBox", false);
-				fCheckB(tW, "DontSupportReentrantFilterMessage", false);
-				fCheckB(tW, "EnableVisualStyleValidation", false);
-				fCheckB(tA, "Level4", true);
+				fCheck(tD, "DontSupportPngFramesInIcons", false);
+				fCheck(tD, "OptimizePrintPreview", true);
+				fCheck(tM, "BlockLongPaths", false);
+				fCheck(tS, "DoNotUseNativeZipLibraryForDecompression", false);
+				fCheck(tM, "UseLegacyPathHandling", false);
+				fCheck(tS, "DontEnableSchUseStrongCrypto", false);
+				fCheck(tS, "DontEnableSystemDefaultTlsVersions", false);
+				fCheck(tM, "UseLegacyFipsThrow", false);
+				fCheck(tW, "DoNotLoadLatestRichEditControl", false);
+				fCheck(tW, "DoNotSupportSelectAllShortcutInMultilineTextBox", false);
+				fCheck(tW, "DontSupportReentrantFilterMessage", false);
+				fCheck(tW, "EnableVisualStyleValidation", false);
+				fCheck(tA, "Level4", true);
 #endif
 			}
 			catch(Exception) { Debug.Assert(false); }
 		}
 
-		// internal static Mutex TrySingleInstanceLock(string strName, bool bInitiallyOwned)
+		// private static Mutex TrySingleInstanceLock(string strName, bool bInitiallyOwned)
 		// {
 		//	if(strName == null) throw new ArgumentNullException("strName");
 		//	try
@@ -848,7 +849,7 @@ namespace KeePass
 		//	return null;
 		// }
 
-		internal static Mutex TryGlobalInstanceNotify(string strBaseName)
+		private static Mutex TryGlobalInstanceNotify(string strBaseName)
 		{
 			if(strBaseName == null) throw new ArgumentNullException("strBaseName");
 
@@ -877,7 +878,7 @@ namespace KeePass
 			return null;
 		}
 
-		// internal static void DestroyMutex(Mutex m, bool bReleaseFirst)
+		// private static void DestroyMutex(Mutex m, bool bReleaseFirst)
 		// {
 		//	if(m == null) return;
 		//	if(bReleaseFirst)
@@ -891,7 +892,7 @@ namespace KeePass
 
 		private static void ActivatePreviousInstance(string[] args)
 		{
-			if((m_nAppMessage == 0) && !NativeLib.IsUnix())
+			if((g_nAppMessage == 0) && !NativeLib.IsUnix())
 			{
 				Debug.Assert(false);
 				return;
@@ -899,10 +900,10 @@ namespace KeePass
 
 			try
 			{
-				if(string.IsNullOrEmpty(m_cmdLineArgs.FileName))
+				if(string.IsNullOrEmpty(g_cmdLineArgs.FileName))
 				{
 					// NativeMethods.PostMessage((IntPtr)NativeMethods.HWND_BROADCAST,
-					//	m_nAppMessage, (IntPtr)AppMessage.RestoreWindow, IntPtr.Zero);
+					//	g_nAppMessage, (IntPtr)AppMessage.RestoreWindow, IntPtr.Zero);
 					IpcBroadcast.Send(AppMessage.RestoreWindow, 0, false);
 				}
 				else
@@ -920,7 +921,7 @@ namespace KeePass
 		// For plugins
 		public static void NotifyUserActivity()
 		{
-			MainForm mf = m_formMain;
+			MainForm mf = g_formMain;
 			if(mf != null) mf.NotifyUserActivity();
 		}
 
@@ -928,7 +929,7 @@ namespace KeePass
 		{
 			try
 			{
-				MainForm mf = m_formMain;
+				MainForm mf = g_formMain;
 				if(mf != null) return mf.Handle;
 			}
 			catch(Exception) { Debug.Assert(false); }
@@ -936,24 +937,23 @@ namespace KeePass
 			return IntPtr.Zero;
 		}
 
-		private static void BroadcastAppMessageAndCleanUp(AppMessage msg)
+		private static void BroadcastAppMessage(AppMessage msg)
 		{
 			try
 			{
 				// NativeMethods.PostMessage((IntPtr)NativeMethods.HWND_BROADCAST,
-				//	m_nAppMessage, (IntPtr)msg, IntPtr.Zero);
+				//	g_nAppMessage, (IntPtr)msg, IntPtr.Zero);
 				IpcBroadcast.Send(msg, 0, false);
 			}
 			catch(Exception) { Debug.Assert(false); }
-
-			MainCleanUp();
 		}
 
 		private static void LoadTranslation()
 		{
-			if(!m_bEnableTranslation) return;
+			Debug.Assert(g_kpTranslation == null);
+			if(!g_bEnableTranslation) return;
 
-			string strPath = m_appConfig.Application.GetLanguageFilePath();
+			string strPath = g_appConfig.Application.GetLanguageFilePath();
 			if(string.IsNullOrEmpty(strPath)) return;
 
 			try
@@ -962,16 +962,16 @@ namespace KeePass
 				if(!File.Exists(strPath)) return;
 
 				XmlSerializerEx xs = new XmlSerializerEx(typeof(KPTranslation));
-				m_kpTranslation = KPTranslation.Load(strPath, xs);
+				g_kpTranslation = KPTranslation.Load(strPath, xs);
 
 				KPRes.SetTranslatedStrings(
-					m_kpTranslation.SafeGetStringTableDictionary(
+					g_kpTranslation.SafeGetStringTableDictionary(
 					"KeePass.Resources.KPRes"));
 				KLRes.SetTranslatedStrings(
-					m_kpTranslation.SafeGetStringTableDictionary(
+					g_kpTranslation.SafeGetStringTableDictionary(
 					"KeePassLib.Resources.KLRes"));
 
-				StrUtil.RightToLeft = m_kpTranslation.Properties.RightToLeft;
+				StrUtil.RightToLeft = g_kpTranslation.Properties.RightToLeft;
 			}
 			// catch(DirectoryNotFoundException) { } // Ignore
 			// catch(FileNotFoundException) { } // Ignore
@@ -1075,29 +1075,23 @@ namespace KeePass
 #endif
 
 #if DEBUG
-		private static Stack<TraceListener[]> g_sTraceListeners = null;
+		private static readonly Stack<TraceListener[]> g_sTraceListeners =
+			new Stack<TraceListener[]>();
 #endif
 		[Conditional("DEBUG")]
 		internal static void EnableAssertions(bool bEnable)
 		{
 #if DEBUG
-			Stack<TraceListener[]> s = g_sTraceListeners;
-			if(s == null)
-			{
-				s = new Stack<TraceListener[]>();
-				g_sTraceListeners = s;
-			}
-
 			if(bEnable)
 			{
 				Debug.Listeners.Clear();
-				Debug.Listeners.AddRange(s.Pop());
+				Debug.Listeners.AddRange(g_sTraceListeners.Pop());
 			}
 			else
 			{
 				TraceListener[] v = new TraceListener[Debug.Listeners.Count];
 				Debug.Listeners.CopyTo(v, 0);
-				s.Push(v);
+				g_sTraceListeners.Push(v);
 				Debug.Listeners.Clear();
 			}
 #endif
@@ -1166,7 +1160,7 @@ namespace KeePass
 			}
 			catch(Exception ex)
 			{
-				MessageService.ShowWarning(strPath, ex.Message, KPRes.FixByReinstall);
+				MessageService.ShowWarning(strPath, ex, KPRes.FixByReinstall);
 			}
 		}
 	}

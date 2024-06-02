@@ -170,6 +170,7 @@ namespace KeePass.Forms
 			AddOption(aceDef, "NewEntryExpiresInDays", lvg, fRA(KPRes.ExpiryDefaultDays));
 			AddOption(cfg.Native, "NativeKeyTransformations", lvg, KPRes.NativeLibUse);
 			AddOption(aceSec, "KeyTransformWeakWarning", lvg, KPRes.KeyTransformWeakWarning);
+			AddOption(aceSec, "PreventScreenCapture", lvg, KPRes.PreventScreenCapture);
 			AddOption(aceSec, "MasterKeyOnSecureDesktop", lvg, KPRes.MasterKeyOnSecureDesktop);
 			AddOption(aceSec, "ClearKeyCommandLineParams", lvg, KPRes.ClearKeyCmdLineParams);
 			AddOption(aceSec.MasterPassword, "RememberWhileOpen", lvg, KPRes.MasterPasswordRmbWhileOpen);
@@ -199,7 +200,7 @@ namespace KeePass.Forms
 			fAddPolicy("EditTriggers", AppPolicyId.EditTriggers);
 
 			lvg = AddGroup(KPRes.IOConnectionLong);
-			AddOption(aceSec, "SslCertsAcceptInvalid", lvg, KPRes.SslCertsAcceptInvalid);
+			AddOption(aceSec, "SslCertsAcceptInvalid", lvg, KPRes.TlsCertsAcceptInvalid);
 
 			m_lvMain.EndUpdateEx();
 		}

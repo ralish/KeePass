@@ -691,7 +691,7 @@ namespace KeePass.DataExchange
 				string strPlaceholder = str.Substring(iStart, iEnd - iStart + 1);
 
 				if(!strPlaceholder.StartsWith("{S:", StrUtil.CaseIgnoreCmp))
-					str = str.Replace(strPlaceholder, strPlaceholder.ToUpper());
+					str = str.Replace(strPlaceholder, strPlaceholder.ToUpperInvariant());
 
 				iOffset = iStart + 1;
 			}

@@ -276,9 +276,9 @@ namespace KeePass.Util
 							pbResult = File.ReadAllBytes(strFile);
 							break;
 						}
-						catch(Exception exRead)
+						catch(Exception exR)
 						{
-							if(!AskForRetry(strFile, exRead.Message)) break;
+							if(!AskForRetry(strFile, exR)) break;
 						}
 					}
 				}
@@ -309,9 +309,9 @@ namespace KeePass.Util
 
 						break;
 					}
-					catch(Exception exDel)
+					catch(Exception exD)
 					{
-						if(!AskForRetry(strReportObj, exDel.Message)) break;
+						if(!AskForRetry(strReportObj, exD)) break;
 					}
 				}
 			}
@@ -320,9 +320,10 @@ namespace KeePass.Util
 			return pbResult;
 		}
 
-		private static bool AskForRetry(string strObj, string strText)
+		private static bool AskForRetry(string strObj, Exception ex)
 		{
-			string strContent = strObj + MessageService.NewParagraph + strText;
+			string strContent = strObj + MessageService.NewParagraph +
+				StrUtil.FormatException(ex, null);
 
 			int i = VistaTaskDialog.ShowMessageBoxEx(strContent, null,
 				PwDefs.ShortProductName, VtdIcon.Warning, null,

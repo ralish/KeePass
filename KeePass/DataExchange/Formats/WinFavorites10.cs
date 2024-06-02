@@ -204,10 +204,7 @@ namespace KeePass.DataExchange.Formats
 			if(!Directory.Exists(strDir))
 			{
 				try { Directory.CreateDirectory(strDir); }
-				catch(Exception exDir)
-				{
-					throw new Exception(strDir + MessageService.NewParagraph + exDir.Message);
-				}
+				catch(Exception exDir) { throw new ExtendedException(strDir, exDir); }
 
 				WaitForDirCommit(strDir, true);
 			}
@@ -236,10 +233,7 @@ namespace KeePass.DataExchange.Formats
 					File.WriteAllText(strFile, sb.ToString(), Encoding.Default);
 				}
 			}
-			catch(Exception exWrite)
-			{
-				throw new Exception(strFile + MessageService.NewParagraph + exWrite.Message);
-			}
+			catch(Exception exFile) { throw new ExtendedException(strFile, exFile); }
 		}
 
 		private static void WaitForDirCommit(string strDir, bool bRequireExists)

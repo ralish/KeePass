@@ -1760,80 +1760,12 @@ namespace KeePass.Forms
 
 		private void OnPwListKeyDown(object sender, KeyEventArgs e)
 		{
-			if(HandleMoveKeyMessage(e, true, true)) return;
-
-			bool bHandled = true;
-
-			if(e.Control)
-			{
-				switch(e.KeyCode)
-				{
-					case Keys.A: OnEntrySelectAll(sender, e); break;
-					case Keys.C:
-					case Keys.Insert:
-						if(e.Shift) OnEntryClipCopy(sender, e);
-						else OnEntryCopyPassword(sender, e);
-						break;
-					case Keys.D:
-						if(e.Shift) OnEntryCompareMark(sender, e);
-						else if(GetSelectedEntriesCount() == 2) OnEntryCompare2(sender, e);
-						else OnEntryCompare1(sender, e);
-						break;
-					case Keys.T:
-						OnEntryStringClick(sender, new DynamicMenuEventArgs(
-							string.Empty, (e.Shift ? m_edcShowTotp : m_edcCopyTotp)));
-						break;
-					case Keys.V:
-						if(e.Shift) OnEntryClipPaste(sender, e);
-						else OnEntryPerformAutoType(sender, e);
-						break;
-					default: bHandled = false; break;
-				}
-			}
-			else if(e.Alt) bHandled = false;
-			else if(e.KeyCode == Keys.Delete)
-				OnEntryDelete(sender, e);
-			else if(e.KeyCode == Keys.Return) // Return == Enter
-				OnEntryEdit(sender, e);
-			else if(e.KeyCode == Keys.Insert)
-			{
-				if(e.Shift) OnEntryClipPaste(sender, e);
-				else OnEntryAdd(sender, e);
-			}
-			else if(e.KeyCode == Keys.F2)
-				OnEntryEdit(sender, e);
-			else bHandled = false;
-
-			if(bHandled) UIUtil.SetHandled(e, true);
+			HandleEntryKeyEvent(e, true);
 		}
 
 		private void OnPwListKeyUp(object sender, KeyEventArgs e)
 		{
-			if(HandleMoveKeyMessage(e, false, true)) return;
-
-			bool bHandled = true;
-
-			if(e.Control)
-			{
-				switch(e.KeyCode)
-				{
-					case Keys.A: break;
-					case Keys.C: break;
-					case Keys.Insert: break;
-					case Keys.D: break;
-					case Keys.T: break;
-					case Keys.V: break;
-					default: bHandled = false; break;
-				}
-			}
-			else if(e.Alt) bHandled = false;
-			else if(e.KeyCode == Keys.Delete) { }
-			else if(e.KeyCode == Keys.Return) { } // Return == Enter
-			else if(e.KeyCode == Keys.Insert) { }
-			else if(e.KeyCode == Keys.F2) { }
-			else bHandled = false;
-
-			if(bHandled) UIUtil.SetHandled(e, true);
+			HandleEntryKeyEvent(e, false);
 		}
 
 		private void OnFindInGroup(object sender, EventArgs e)
@@ -2180,35 +2112,12 @@ namespace KeePass.Forms
 
 		private void OnGroupsKeyDown(object sender, KeyEventArgs e)
 		{
-			if(HandleMoveKeyMessage(e, true, false)) return;
-
-			bool bHandled = true;
-
-			if(e.Alt) bHandled = false;
-			else if(e.KeyCode == Keys.Delete)
-				OnGroupDelete(sender, e);
-			else if(e.KeyCode == Keys.F2)
-				OnGroupEdit(sender, e);
-			else if(e.KeyCode == Keys.Return)
-				SelectGroup(m_tvGroups.SelectedNode, true);
-			else bHandled = false;
-
-			if(bHandled) UIUtil.SetHandled(e, true);
+			HandleGroupKeyEvent(e, true);
 		}
 
 		private void OnGroupsKeyUp(object sender, KeyEventArgs e)
 		{
-			if(HandleMoveKeyMessage(e, false, false)) return;
-
-			bool bHandled = true;
-
-			if(e.Alt) bHandled = false;
-			else if(e.KeyCode == Keys.Delete) { }
-			else if(e.KeyCode == Keys.F2) { }
-			else if(e.KeyCode == Keys.Return) { }
-			else bHandled = false;
-
-			if(bHandled) UIUtil.SetHandled(e, true);
+			HandleGroupKeyEvent(e, false);
 		}
 
 		private void OnTabMainSelectedIndexChanged(object sender, EventArgs e)
@@ -2278,12 +2187,12 @@ namespace KeePass.Forms
 
 		private void OnEntryViewKeyDown(object sender, KeyEventArgs e)
 		{
-			HandleMainWindowKeyMessage(e, true);
+			HandleMainWindowKeyEvent(e, true);
 		}
 
 		private void OnEntryViewKeyUp(object sender, KeyEventArgs e)
 		{
-			HandleMainWindowKeyMessage(e, false);
+			HandleMainWindowKeyEvent(e, false);
 		}
 
 		private void OnSystemTrayMouseDown(object sender, MouseEventArgs e)
@@ -2721,35 +2630,21 @@ namespace KeePass.Forms
 		{
 			Debug.Assert(sender == m_menuGroupDX);
 
-			bool bPaste = m_docMgr.ActiveDatabase.IsOpen;
-			try // Might fail/throw due to clipboard access timeout
-			{
-				bPaste &= ClipboardUtil.ContainsData(EntryUtil.ClipFormatGroup);
-			}
-			catch(Exception) { bPaste = false; }
-			UIUtil.SetEnabledFast(bPaste, m_menuGroupClipPaste);
+			UIUtil.SetEnabledFast(EntryUtil.CanPasteGroup(GetSelectedGroup()),
+				m_menuGroupClipPaste);
 		}
 
 		private void OnEntryDXOpening(object sender, EventArgs e)
 		{
 			Debug.Assert(sender == m_menuEntryDX);
 
-			bool bPaste = m_docMgr.ActiveDatabase.IsOpen;
-			bool bMulti = (m_lvEntries.SelectedIndices.Count >= 2); // Text consistency
+			bool b1;
+			bool b = EntryUtil.CanPasteEntries(GetSelectedGroup(), out b1);
 
-			try // Might fail/throw due to clipboard access timeout
-			{
-				bool b1 = ClipboardUtil.ContainsData(EntryUtil.ClipFormatEntry);
-				bool bM = ClipboardUtil.ContainsData(EntryUtil.ClipFormatEntries);
-				bool bAny = (b1 || bM);
+			UIUtil.SetEnabledFast(b, m_menuEntryClipPaste);
 
-				bPaste &= bAny;
-				if(bAny) bMulti = bM;
-			}
-			catch(Exception) { bPaste = false; }
-
-			UIUtil.SetEnabledFast(bPaste, m_menuEntryClipPaste);
-
+			// Text consistency
+			bool bMulti = (b ? !b1 : (m_lvEntries.SelectedIndices.Count >= 2));
 			m_menuEntryClipPaste.Text = (bMulti ? KPRes.PasteEntriesCmd :
 				KPRes.PasteEntryCmd);
 		}

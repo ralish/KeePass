@@ -101,6 +101,12 @@ namespace KeePass.Resources
 		}
 
 		[Obsolete]
+		public static string SslCertsAcceptInvalid
+		{
+			get { return KPRes.TlsCertsAcceptInvalid; }
+		}
+
+		[Obsolete]
 		public static string TimeOtp
 		{
 			get { return string.Empty; } // "Time-Based OTP"

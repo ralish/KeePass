@@ -59,6 +59,8 @@ namespace KeePass.UI
 			}
 		}
 
+		// internal float FontSizeMaximum { get; set; } // Points
+
 		public FontControlGroup(CheckBox cb, Button btn, AceFont afCurrent,
 			AceFont afDefault)
 		{
@@ -153,6 +155,9 @@ namespace KeePass.UI
 				using(FontDialog dlg = UIUtil.CreateFontDialog(false))
 				{
 					dlg.Font = m_af.ToFont();
+
+					// if(this.FontSizeMaximum > 0.0f)
+					//	dlg.MaxSize = (int)Math.Round(this.FontSizeMaximum);
 
 					if(dlg.ShowDialog() == DialogResult.OK)
 					{

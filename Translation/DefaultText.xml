@@ -650,7 +650,7 @@
 			<Value>Here you can maintain the currently open database.</Value>
 		</Data>
 		<Data Name="DatabaseModifiedNoDot">
-			<Value>The current database file has been modified</Value>
+			<Value>The database has been modified</Value>
 		</Data>
 		<Data Name="DatabaseNamePrompt">
 			<Value>Enter a name for the database or leave it empty.</Value>
@@ -945,6 +945,9 @@
 		</Data>
 		<Data Name="Export">
 			<Value>Export</Value>
+		</Data>
+		<Data Name="ExportCmd">
+			<Value>&amp;Export...</Value>
 		</Data>
 		<Data Name="ExportEntriesCmd">
 			<Value>&amp;Export Entries...</Value>
@@ -1894,6 +1897,12 @@
 		<Data Name="OptimizeForScreenReader">
 			<Value>Optimize for screen reader (activate only if you are using a screen reader)</Value>
 		</Data>
+		<Data Name="OptionActivateAboutTo">
+			<Value>You are about to activate the following option:</Value>
+		</Data>
+		<Data Name="OptionActivateConfirm">
+			<Value>Are you sure you want to activate the option?</Value>
+		</Data>
 		<Data Name="OptionReqOn">
 			<Value>For this operation, the following option must be turned on:</Value>
 		</Data>
@@ -2122,6 +2131,12 @@
 		<Data Name="PreReleaseVersion">
 			<Value>Pre-release version</Value>
 		</Data>
+		<Data Name="PreventScreenCapture">
+			<Value>Prevent certain screen captures</Value>
+		</Data>
+		<Data Name="PreventScreenCaptureNote">
+			<Value>This may also prevent legitimate other software (remote desktop solutions, accessibility tools such as screen magnifiers, etc.) from seeing KeePass windows.</Value>
+		</Data>
 		<Data Name="Print">
 			<Value>Print</Value>
 		</Data>
@@ -2238,6 +2253,9 @@
 		</Data>
 		<Data Name="RemoteHostReachable">
 			<Value>Remote host is reachable (ping)</Value>
+		</Data>
+		<Data Name="RenameCmd">
+			<Value>&amp;Rename...</Value>
 		</Data>
 		<Data Name="RepairCmd">
 			<Value>&amp;Repair</Value>
@@ -2503,9 +2521,6 @@
 		<Data Name="SpecialKeys">
 			<Value>Special Keys</Value>
 		</Data>
-		<Data Name="SslCertsAcceptInvalid">
-			<Value>Accept invalid SSL certificates (self-signed, expired, ...)</Value>
-		</Data>
 		<Data Name="StandardExpireSelect">
 			<Value>Select one of the standard expiry times</Value>
 		</Data>
@@ -2625,6 +2640,9 @@
 		</Data>
 		<Data Name="Title">
 			<Value>Title</Value>
+		</Data>
+		<Data Name="TlsCertsAcceptInvalid">
+			<Value>Accept invalid TLS/SSL certificates (self-signed, expired, ...)</Value>
 		</Data>
 		<Data Name="Toggle">
 			<Value>Toggle</Value>

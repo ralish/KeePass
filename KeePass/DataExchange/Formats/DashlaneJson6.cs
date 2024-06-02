@@ -64,7 +64,7 @@ namespace KeePass.DataExchange.Formats
 			foreach(string strType in jo.Items.Keys)
 			{
 				if(strType == null) { Debug.Assert(false); continue; }
-				string strTypeNorm = strType.Trim().ToLower();
+				string strTypeNorm = strType.Trim().ToLowerInvariant();
 
 				JsonObject[] vEntries = jo.GetValueArray<JsonObject>(strType);
 				if(vEntries == null) { Debug.Assert(false); continue; }
@@ -143,7 +143,7 @@ namespace KeePass.DataExchange.Formats
 				strKey = (new string(char.ToUpper(strKey[0]), 1)) +
 					strKey.Substring(1);
 
-				string strNorm = strKey.ToLower();
+				string strNorm = strKey.ToLowerInvariant();
 				switch(strNorm)
 				{
 					case "fullname":

@@ -231,18 +231,18 @@ namespace KeePass.Util
 			mf.UIBlockInteraction(true);
 
 			List<FsxContext> lContexts = new List<FsxContext>();
-			string strExcp = null;
+			Exception exR = null;
 			try { lContexts = Find(fMatch, sl, strRootPath); }
-			catch(Exception ex) { strExcp = ex.Message; }
+			catch(Exception ex) { exR = ex; }
 
 			bool bAborted = !sl.ContinueWork();
 
 			mf.UIBlockInteraction(false);
 			sl.EndLogging();
 
-			if(!string.IsNullOrEmpty(strExcp))
+			if(exR != null)
 			{
-				MessageService.ShowWarning(strExcp);
+				MessageService.ShowWarning(exR);
 				return null;
 			}
 

@@ -73,6 +73,16 @@ namespace KeePass.Forms
 			set { m_bRecreateOnly = value; }
 		}
 
+		private bool m_bSecureDesktop = false;
+		[Browsable(false)]
+		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+		[DefaultValue(false)]
+		public bool SecureDesktopMode
+		{
+			get { return m_bSecureDesktop; }
+			set { m_bSecureDesktop = value; }
+		}
+
 		private string m_strResultFile = null;
 		public string ResultFile
 		{
@@ -191,7 +201,7 @@ namespace KeePass.Forms
 			strName += "." + AppDefs.FileExtension.KeyFile;
 
 			return FileDialogsEx.ShowKeyFileDialog(true, KPRes.KeyFileCreateTitle,
-				strName, false, false);
+				strName, false, m_bSecureDesktop);
 		}
 
 		private string CreateKeyFile()

@@ -18,14 +18,12 @@
 */
 
 using System;
-using System.CodeDom;
 using System.CodeDom.Compiler;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.IO.Compression;
 using System.Resources;
 using System.Security.Cryptography;
 using System.Text;
@@ -35,7 +33,6 @@ using Microsoft.CSharp;
 // using Microsoft.VisualBasic;
 
 using KeePass.App;
-using KeePass.Forms;
 using KeePass.Resources;
 using KeePass.UI;
 using KeePass.Util;
@@ -100,13 +97,11 @@ namespace KeePass.Plugins
 			try { LoadPriv(strFilePath, slStatus, true, true, true, null); }
 			catch(PlgxException exPlgx)
 			{
-				MessageService.ShowWarning(strFilePath + MessageService.NewParagraph +
-					KPRes.PluginLoadFailed + MessageService.NewParagraph +
-					exPlgx.Message);
+				MessageService.ShowWarning(strFilePath, KPRes.PluginLoadFailed, exPlgx);
 			}
-			catch(Exception exLoad)
+			catch(Exception ex)
 			{
-				PluginManager.ShowLoadError(strFilePath, exLoad, slStatus);
+				PluginManager.ShowLoadError(strFilePath, ex, slStatus);
 			}
 		}
 
@@ -579,9 +574,7 @@ namespace KeePass.Plugins
 
 			if(!bCompiled)
 			{
-				if(Program.CommandLineArgs[AppDefs.CommandLineOptions.Debug] != null)
-					SaveCompilerResults(plgx, sbCompilerLog);
-
+				if(PwDefs.DebugMode) SaveCompilerResults(plgx, sbCompilerLog);
 				throw new InvalidOperationException();
 			}
 
@@ -837,8 +830,8 @@ namespace KeePass.Plugins
 			try { NativeLib.StartProcess(strApp, strArgs); }
 			catch(Exception ex)
 			{
-				if(Program.CommandLineArgs[AppDefs.CommandLineOptions.Debug] != null)
-					throw new PlgxException(ex.Message);
+				if(PwDefs.DebugMode)
+					throw new PlgxException(StrUtil.FormatException(ex));
 				throw;
 			}
 		}

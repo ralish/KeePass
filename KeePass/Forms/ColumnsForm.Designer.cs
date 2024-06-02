@@ -32,11 +32,12 @@
 			this.m_btnCancel = new System.Windows.Forms.Button();
 			this.m_lblChoose = new System.Windows.Forms.Label();
 			this.m_lblReorderHint = new System.Windows.Forms.Label();
-			this.m_lvColumns = new KeePass.UI.CustomListViewEx();
 			this.m_bannerImage = new System.Windows.Forms.PictureBox();
 			this.m_lblSortHint = new System.Windows.Forms.Label();
 			this.m_grpColumn = new System.Windows.Forms.GroupBox();
 			this.m_cbHide = new System.Windows.Forms.CheckBox();
+			this.m_lvColumns = new KeePass.UI.CustomListViewEx();
+			this.m_cbRmbHidingPasswords = new System.Windows.Forms.CheckBox();
 			((System.ComponentModel.ISupportInitialize)(this.m_bannerImage)).BeginInit();
 			this.m_grpColumn.SuspendLayout();
 			this.SuspendLayout();
@@ -75,25 +76,11 @@
 			// m_lblReorderHint
 			// 
 			this.m_lblReorderHint.AutoSize = true;
-			this.m_lblReorderHint.Location = new System.Drawing.Point(9, 448);
+			this.m_lblReorderHint.Location = new System.Drawing.Point(9, 460);
 			this.m_lblReorderHint.Name = "m_lblReorderHint";
 			this.m_lblReorderHint.Size = new System.Drawing.Size(344, 13);
-			this.m_lblReorderHint.TabIndex = 5;
+			this.m_lblReorderHint.TabIndex = 6;
 			this.m_lblReorderHint.Text = "To reorder columns, drag&&drop the column headers in the main window.";
-			// 
-			// m_lvColumns
-			// 
-			this.m_lvColumns.CheckBoxes = true;
-			this.m_lvColumns.FullRowSelect = true;
-			this.m_lvColumns.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable;
-			this.m_lvColumns.Location = new System.Drawing.Point(12, 89);
-			this.m_lvColumns.MultiSelect = false;
-			this.m_lvColumns.Name = "m_lvColumns";
-			this.m_lvColumns.Size = new System.Drawing.Size(500, 300);
-			this.m_lvColumns.TabIndex = 1;
-			this.m_lvColumns.UseCompatibleStateImageBehavior = false;
-			this.m_lvColumns.View = System.Windows.Forms.View.Details;
-			this.m_lvColumns.SelectedIndexChanged += new System.EventHandler(this.OnColumnsSelectedIndexChanged);
 			// 
 			// m_bannerImage
 			// 
@@ -107,17 +94,17 @@
 			// m_lblSortHint
 			// 
 			this.m_lblSortHint.AutoSize = true;
-			this.m_lblSortHint.Location = new System.Drawing.Point(9, 466);
+			this.m_lblSortHint.Location = new System.Drawing.Point(9, 479);
 			this.m_lblSortHint.Name = "m_lblSortHint";
 			this.m_lblSortHint.Size = new System.Drawing.Size(419, 13);
-			this.m_lblSortHint.TabIndex = 6;
+			this.m_lblSortHint.TabIndex = 7;
 			this.m_lblSortHint.Text = "To sort entries by a field, click on the corresponding column header in the main " +
 				"window.";
 			// 
 			// m_grpColumn
 			// 
 			this.m_grpColumn.Controls.Add(this.m_cbHide);
-			this.m_grpColumn.Location = new System.Drawing.Point(12, 395);
+			this.m_grpColumn.Location = new System.Drawing.Point(12, 389);
 			this.m_grpColumn.Name = "m_grpColumn";
 			this.m_grpColumn.Size = new System.Drawing.Size(500, 45);
 			this.m_grpColumn.TabIndex = 4;
@@ -135,13 +122,38 @@
 			this.m_cbHide.UseVisualStyleBackColor = true;
 			this.m_cbHide.CheckedChanged += new System.EventHandler(this.OnHideCheckedChanged);
 			// 
+			// m_lvColumns
+			// 
+			this.m_lvColumns.CheckBoxes = true;
+			this.m_lvColumns.FullRowSelect = true;
+			this.m_lvColumns.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable;
+			this.m_lvColumns.Location = new System.Drawing.Point(12, 89);
+			this.m_lvColumns.MultiSelect = false;
+			this.m_lvColumns.Name = "m_lvColumns";
+			this.m_lvColumns.Size = new System.Drawing.Size(500, 294);
+			this.m_lvColumns.TabIndex = 1;
+			this.m_lvColumns.UseCompatibleStateImageBehavior = false;
+			this.m_lvColumns.View = System.Windows.Forms.View.Details;
+			this.m_lvColumns.SelectedIndexChanged += new System.EventHandler(this.OnColumnsSelectedIndexChanged);
+			// 
+			// m_cbRmbHidingPasswords
+			// 
+			this.m_cbRmbHidingPasswords.AutoSize = true;
+			this.m_cbRmbHidingPasswords.Location = new System.Drawing.Point(12, 440);
+			this.m_cbRmbHidingPasswords.Name = "m_cbRmbHidingPasswords";
+			this.m_cbRmbHidingPasswords.Size = new System.Drawing.Size(190, 17);
+			this.m_cbRmbHidingPasswords.TabIndex = 5;
+			this.m_cbRmbHidingPasswords.Text = "&Remember password hiding setting";
+			this.m_cbRmbHidingPasswords.UseVisualStyleBackColor = true;
+			// 
 			// ColumnsForm
 			// 
 			this.AcceptButton = this.m_btnOK;
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 			this.CancelButton = this.m_btnCancel;
-			this.ClientSize = new System.Drawing.Size(605, 488);
+			this.ClientSize = new System.Drawing.Size(605, 503);
+			this.Controls.Add(this.m_cbRmbHidingPasswords);
 			this.Controls.Add(this.m_grpColumn);
 			this.Controls.Add(this.m_lblSortHint);
 			this.Controls.Add(this.m_bannerImage);
@@ -178,5 +190,6 @@
 		private System.Windows.Forms.Label m_lblSortHint;
 		private System.Windows.Forms.GroupBox m_grpColumn;
 		private System.Windows.Forms.CheckBox m_cbHide;
+		private System.Windows.Forms.CheckBox m_cbRmbHidingPasswords;
 	}
 }

@@ -85,28 +85,29 @@ normal master key dialog instead (because in this dialog the password
 is hidden by bullets/asterisks and it is encrypted by the process memory
 protection).</p>
 
-<p><b>Key file.</b>
-For supplying the key file location, the <code>-keyfile:</code> switch
-exists. The same rules as above apply, just that you specify the key file location:
-<code>-keyfile:D:\pwsafe.key</code>. You also need to quote the value, if it contains
-a space, tab or other whitespace characters.</p>
+<p><b>Key file/provider.</b>
+For supplying the key file path or the name of the key provider plugin,
+the <code>-keyfile:</code> parameter exists.
+The same rules as above apply, just that you specify the key file/provider,
+e.g. <code>-keyfile:D:\pwsafe.key</code>. You also need to quote the value,
+if it contains a space, tab or other whitespace characters.</p>
 
 <p><b>Preselection.</b>
-In order to just preselect a key file, use the <code>-preselect:</code> option.
+In order to just preselect a key file/provider, use the <code>-preselect:</code> option.
 For example, if you lock your database with a password <i>and</i> a key file, but
 just want to type in the password (so, without selecting the key file manually),
-your command line would look like this:</p>
+your command line could look like this:</p>
 
 <pre>KeePass.exe &quot;C:\My Documents\MyDatabase.kdbx&quot; -preselect:C:\pwsafe.key</pre>
 
-<p>KeePass would then show a prompt for the password for the database, but in
-the key file list, the <code>C:\pwsafe.key</code> file is selected already. When using the
-<code>-preselect:</code> switch, KeePass by default activates the key file switch and
-sets the focus to the password edit window.</p>
+<p>KeePass will then show a prompt for the master key of the database, in whose
+key file/provider list the <code>C:\pwsafe.key</code> file is already selected.
+When using the <code>-preselect:</code> parameter, KeePass by default activates
+the key file/provider option and sets the focus to the password edit window.</p>
 
-<p>Note the difference! The <code>-preselect:</code> switch just preselects the key file
-for you and displays the login prompt. In contrast, the <code>-keyfile:</code> switch
-doesn't prompt you for the (maybe missing) password.</p>
+<p>Note the difference! The <code>-preselect:</code> parameter just preselects the key file/provider
+in the master key dialog for you. In contrast, the <code>-keyfile:</code> parameter
+does not prompt you for the (maybe missing) password.</p>
 
 <p><b>Other.</b>
 The <code>-minimize</code> command line option makes KeePass start up minimized.
@@ -148,7 +149,11 @@ The <code>-cancel</code> option causes all other KeePass instances to
 cancel opening/saving a database file.<br />
 <br />
 The path of the local <a href="configuration.html">configuration</a> file can be changed
-using the <code>-cfg-local:</code> command line parameter.
+using the <code>-cfg-local:</code> command line parameter.<br />
+<br />
+If the <code>-debug</code> option is specified, some error messages are
+more detailed. Please note that the more detailed error messages may contain
+sensitive data (e.g. passwords).
 
 
 <p>The order of the arguments is arbitrary.</p>

@@ -401,7 +401,7 @@ namespace KeePass.Forms
 
 					LoadSettings(d, true, true);
 				}
-				catch(Exception ex) { MessageService.ShowWarning(ex.Message); }
+				catch(Exception ex) { MessageService.ShowWarning(ex); }
 			}
 		}
 

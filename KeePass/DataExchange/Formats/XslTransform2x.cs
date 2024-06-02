@@ -18,8 +18,6 @@
 */
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Text;
@@ -86,10 +84,10 @@ namespace KeePass.DataExchange.Formats
 		{
 			XslCompiledTransform xsl = new XslCompiledTransform();
 			try { xsl.Load(strXslFile); }
-			catch(Exception exXsl)
+			catch(Exception ex)
 			{
-				throw new NotSupportedException(strXslFile + MessageService.NewParagraph +
-					KPRes.NoXslFile + MessageService.NewParagraph + exXsl.Message);
+				throw new ExtendedException(strXslFile + MessageService.NewParagraph +
+					KPRes.NoXslFile, ex);
 			}
 
 			byte[] pbData;

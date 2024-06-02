@@ -183,7 +183,7 @@ namespace KeePass.Util.SendInputExt
 								this.Cancelled = true;
 								throw new SecurityException(KPRes.AutoTypeAbortedOnWindow +
 									MessageService.NewParagraph + KPRes.TargetWindow +
-									@": '" + strTitle + @"'.");
+									": '" + strTitle + "'.");
 							}
 						}
 					}

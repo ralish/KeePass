@@ -48,7 +48,6 @@ namespace KeePass.Util.Archive
 			try
 			{
 				string strExe = WinUtil.GetExecutable();
-
 				string strFile = UrlUtil.MakeAbsolutePath(strExe, strXspFile);
 
 				string strDir = UrlUtil.EnsureTerminatingSeparator(
@@ -59,10 +58,7 @@ namespace KeePass.Util.Archive
 
 				CreateFilePriv(strFile, strDir);
 			}
-			catch(Exception ex)
-			{
-				MessageService.ShowWarningExcp(ex);
-			}
+			catch(Exception ex) { MessageService.ShowWarningExcp(ex); }
 		}
 
 		private static void CreateFilePriv(string strFile, string strSourceDir)

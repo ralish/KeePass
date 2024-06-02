@@ -173,12 +173,12 @@ namespace KeePass.DataExchange
 				}
 				catch(Exception ex)
 				{
-					string strMsg = ex.Message;
+					Exception exR = ex;
 					if(bSynchronize && (ex is InvalidCompositeKeyException))
-						strMsg = KLRes.InvalidCompositeKey + MessageService.NewParagraph +
-							KPRes.SynchronizingHint;
+						exR = new Exception(KLRes.InvalidCompositeKey +
+							MessageService.NewParagraph + KPRes.SynchronizingHint);
 					MessageService.ShowWarning(iocIn.GetDisplayName(),
-						KPRes.FileImportFailed, strMsg);
+						KPRes.FileImportFailed, exR);
 
 					bAllSuccess = false;
 					continue;

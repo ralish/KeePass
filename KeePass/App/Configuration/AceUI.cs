@@ -73,7 +73,8 @@ namespace KeePass.App.Configuration
 		HideNewDbInfoDialogs = 0x40000,
 		HideAutoTypeObfInfo = 0x80000,
 		NoQuickSearchClear = 0x100000,
-		SecureDesktopIme = 0x200000
+		SecureDesktopIme = 0x200000,
+		AdjustWeakKdfParameters = 0x400000
 	}
 
 	[Flags]
@@ -138,6 +139,8 @@ namespace KeePass.App.Configuration
 				m_font = value;
 			}
 		}
+
+		// internal const float PasswordFontSizeMaximum = 12.0f; // Points
 
 		private AceFont m_fontPasswords = new AceFont(true);
 		public AceFont PasswordFont

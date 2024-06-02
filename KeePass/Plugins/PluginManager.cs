@@ -221,8 +221,7 @@ namespace KeePass.Plugins
 				}
 				catch(Exception exLoad)
 				{
-					if(Program.CommandLineArgs[AppDefs.CommandLineOptions.Debug] != null)
-						MessageService.ShowWarningExcp(strFile, exLoad);
+					if(PwDefs.DebugMode) MessageService.ShowWarning(strFile, exLoad);
 					else exShowStd = exLoad;
 				}
 
@@ -244,9 +243,8 @@ namespace KeePass.Plugins
 			if(NativeLib.IsUnix())
 				strMsg += MessageService.NewParagraph + KPRes.PluginMonoComplete;
 
-			bool bShowExcp = (Program.CommandLineArgs[
-				AppDefs.CommandLineOptions.Debug] != null);
-			string strExcp = ((ex != null) ? StrUtil.FormatException(ex).Trim() : null);
+			bool bShowExcp = PwDefs.DebugMode;
+			string strExcp = ((ex != null) ? StrUtil.FormatException(ex) : null);
 
 			VistaTaskDialog vtd = new VistaTaskDialog();
 			vtd.Content = strMsg;
@@ -258,7 +256,7 @@ namespace KeePass.Plugins
 			if(!vtd.ShowDialog())
 			{
 				if(!bShowExcp) MessageService.ShowWarning(strMsg);
-				else MessageService.ShowWarningExcp(strPath, ex);
+				else MessageService.ShowWarning(strPath, ex);
 			}
 		}
 

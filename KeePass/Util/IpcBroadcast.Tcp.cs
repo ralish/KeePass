@@ -28,7 +28,6 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 
-using KeePass.App;
 using KeePass.Forms;
 
 using KeePassLib;
@@ -127,10 +126,10 @@ namespace KeePass.Util
 			catch(Exception ex)
 			{
 				Debug.Assert(false);
-				if(Program.CommandLineArgs[AppDefs.CommandLineOptions.Debug] != null)
+				if(PwDefs.DebugMode)
 				{
 					Console.WriteLine("Exception in IpcBroadcast.TcpThreadProc:");
-					Console.WriteLine(ex.Message);
+					Console.WriteLine(StrUtil.FormatException(ex));
 				}
 			}
 		}

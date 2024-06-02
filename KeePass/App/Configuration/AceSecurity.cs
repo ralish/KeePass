@@ -167,7 +167,6 @@ namespace KeePass.App.Configuration
 			set { m_bSslCertsAcceptInvalid = value; }
 		}
 
-		// https://keepass.info/help/v2_dev/customize.html#opt
 		private bool m_bPreventScreenCapture = false;
 		[DefaultValue(false)]
 		public bool PreventScreenCapture

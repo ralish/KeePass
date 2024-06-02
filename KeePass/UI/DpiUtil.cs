@@ -22,7 +22,6 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Reflection;
@@ -82,32 +81,47 @@ namespace KeePass.UI
 		private static void EnsureInitialized()
 		{
 			if(m_bInitialized) return;
-			if(NativeLib.IsUnix()) { m_bInitialized = true; return; }
 
 			try
 			{
-				IntPtr hDC = NativeMethods.GetDC(IntPtr.Zero);
-				if(hDC != IntPtr.Zero)
+				if(NativeLib.IsUnix())
 				{
-					m_nDpiX = NativeMethods.GetDeviceCaps(hDC,
-						NativeMethods.LOGPIXELSX);
-					m_nDpiY = NativeMethods.GetDeviceCaps(hDC,
-						NativeMethods.LOGPIXELSY);
-					if((m_nDpiX <= 0) || (m_nDpiY <= 0))
+					// Cf. Mono's Graphics.systemDpi
+					using(Bitmap bmp = new Bitmap(8, 8, PixelFormat.Format32bppArgb))
 					{
-						Debug.Assert(false);
-						m_nDpiX = StdDpi;
-						m_nDpiY = StdDpi;
-					}
-
-					if(NativeMethods.ReleaseDC(IntPtr.Zero, hDC) != 1)
-					{
-						Debug.Assert(false);
+						using(Graphics g = Graphics.FromImage(bmp))
+						{
+							m_nDpiX = (int)g.DpiX;
+							m_nDpiY = (int)g.DpiY;
+						}
 					}
 				}
-				else { Debug.Assert(false); }
+				else
+				{
+					IntPtr hDC = NativeMethods.GetDC(IntPtr.Zero);
+					if(hDC != IntPtr.Zero)
+					{
+						m_nDpiX = NativeMethods.GetDeviceCaps(hDC,
+							NativeMethods.LOGPIXELSX);
+						m_nDpiY = NativeMethods.GetDeviceCaps(hDC,
+							NativeMethods.LOGPIXELSY);
+
+						if(NativeMethods.ReleaseDC(IntPtr.Zero, hDC) != 1)
+						{
+							Debug.Assert(false);
+						}
+					}
+					else { Debug.Assert(false); }
+				}
 			}
 			catch(Exception) { Debug.Assert(false); }
+
+			if((m_nDpiX < 12) || (m_nDpiY < 12))
+			{
+				Debug.Assert(false);
+				m_nDpiX = StdDpi;
+				m_nDpiY = StdDpi;
+			}
 
 			m_dScaleX = (double)m_nDpiX / (double)StdDpi;
 			m_dScaleY = (double)m_nDpiY / (double)StdDpi;

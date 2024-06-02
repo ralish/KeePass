@@ -19,9 +19,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using System.Windows.Forms;
-using System.Diagnostics;
 
 using KeePass.Resources;
 using KeePass.UI;
@@ -37,14 +37,14 @@ namespace KeePass.Util
 
 		public static void Show()
 		{
-			EntryMenu.Show(Cursor.Position.X, Cursor.Position.Y);
+			Show(Cursor.Position.X, Cursor.Position.Y);
 		}
 
 		public static void Show(int iPosX, int iPosY)
 		{
-			EntryMenu.Destroy();
+			Destroy();
 
-			m_ctx = EntryMenu.Construct();
+			m_ctx = Construct();
 			m_ctx.Show(iPosX, iPosY);
 		}
 

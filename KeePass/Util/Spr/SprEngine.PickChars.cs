@@ -149,16 +149,16 @@ namespace KeePass.Util.Spr
 					if(dOptions.ContainsKey("count"))
 						uint.TryParse(dOptions["count"], out uCharCount);
 
-					bool? bInitHide = null;
+					bool? obInitHide = null;
 					if(dOptions.ContainsKey("hide"))
-						bInitHide = StrUtil.StringToBool(dOptions["hide"]);
+						obInitHide = StrUtil.StringToBoolEx(dOptions["hide"]);
 
 					string strContent = ctx.Entry.Strings.ReadSafe(strField);
 					if(strContent.Length == 0) { } // Leave strRep empty
 					else if((strID.Length > 0) && dPicked.ContainsKey(strID))
 						strRep = dPicked[strID];
 					else
-						strRep = ShowCharPickDlg(strContent, uCharCount, bInitHide,
+						strRep = ShowCharPickDlg(strContent, uCharCount, obInitHide,
 							ctx, uRecursionLevel);
 
 					if(strID.Length > 0) dPicked[strID] = strRep;

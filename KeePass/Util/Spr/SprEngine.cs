@@ -964,11 +964,7 @@ namespace KeePass.Util.Spr
 
 					if(bWait) p.WaitForExit();
 				}
-				catch(Exception ex)
-				{
-					string strMsg = strCmd + MessageService.NewParagraph + ex.Message;
-					MessageService.ShowWarning(strMsg);
-				}
+				catch(Exception ex) { MessageService.ShowWarning(strCmd, ex); }
 				finally
 				{
 					try { if(p != null) p.Dispose(); }

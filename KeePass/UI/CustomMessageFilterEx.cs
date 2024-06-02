@@ -23,7 +23,6 @@ using System.Text;
 using System.Windows.Forms;
 
 using KeePass.Native;
-using KeePass.Util;
 
 namespace KeePass.UI
 {

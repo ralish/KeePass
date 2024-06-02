@@ -197,6 +197,7 @@ namespace KeePass.Forms
 				Program.Config.UI.StandardFont, afDefault);
 			m_fcgPassword = new FontControlGroup(m_cbPasswordFont, m_btnPasswordFont,
 				Program.Config.UI.PasswordFont, afMono);
+			// m_fcgPassword.FontSizeMaximum = AceUI.PasswordFontSizeMaximum;
 
 			AceEscAction aEscCur = Program.Config.MainWindow.EscAction;
 			int iEscSel = (int)AceEscAction.Lock;
@@ -391,6 +392,8 @@ namespace KeePass.Forms
 
 			m_cdxSecurityOptions.CreateItem(aceSec, "KeyTransformWeakWarning",
 				lvg, KPRes.KeyTransformWeakWarning);
+			m_cdxSecurityOptions.CreateItem(aceSec, "PreventScreenCapture",
+				lvg, KPRes.PreventScreenCapture, obNoWin);
 			m_cdxSecurityOptions.CreateItem(aceSec, "MasterKeyOnSecureDesktop",
 				lvg, KPRes.MasterKeyOnSecureDesktop, obNoWin);
 			m_cdxSecurityOptions.CreateItem(aceSec, "ClearKeyCommandLineParams",
@@ -706,7 +709,7 @@ namespace KeePass.Forms
 			m_cdxAdvanced.CreateItem(Program.Config.Application, "SaveForceSync",
 				lvg, KPRes.SaveForceSync);
 			m_cdxAdvanced.CreateItem(Program.Config.Security, "SslCertsAcceptInvalid",
-				lvg, KPRes.SslCertsAcceptInvalid);
+				lvg, KPRes.TlsCertsAcceptInvalid);
 
 			lvg = new ListViewGroup(KPRes.Advanced);
 			m_lvAdvanced.Groups.Add(lvg);
@@ -770,6 +773,23 @@ namespace KeePass.Forms
 		}
 
 		private void SaveOptions()
+		{
+			bool bPreventSC = Program.Config.Security.PreventScreenCapture;
+
+			SaveOptionsPriv();
+
+			if(!bPreventSC && Program.Config.Security.PreventScreenCapture)
+			{
+				string strNL = MessageService.NewLine;
+				if(!MessageService.AskYesNo(KPRes.OptionActivateAboutTo + strNL +
+					"'" + KPRes.PreventScreenCapture + "'." + strNL + strNL +
+					KPRes.PreventScreenCaptureNote + strNL + strNL +
+					KPRes.OptionActivateConfirm))
+					Program.Config.Security.PreventScreenCapture = false;
+			}
+		}
+
+		private void SaveOptionsPriv()
 		{
 			if(!m_cbLockAfterTime.Checked)
 				Program.Config.Security.WorkspaceLocking.LockAfterTime = 0;
@@ -1038,7 +1058,8 @@ namespace KeePass.Forms
 		protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
 		{
 			bool bDown;
-			if(!NativeMethods.GetKeyMessageState(ref msg, out bDown))
+			if(!NativeMethods.GetKeyMessageState(ref msg, out bDown) ||
+				(UIUtil.GetActiveControl(this) is HotKeyControlEx))
 				return base.ProcessCmdKey(ref msg, keyData);
 
 			Keys kc = (keyData & Keys.KeyCode);

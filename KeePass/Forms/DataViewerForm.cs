@@ -269,7 +269,7 @@ namespace KeePass.Forms
 			{
 				if((i % cbLine) == 0)
 				{
-					sb.Append(Convert.ToString(i, 16).ToUpper().PadLeft(
+					sb.Append(Convert.ToString(i, 16).ToUpperInvariant().PadLeft(
 						iMaxAddrWidth, '0'));
 					sb.Append(": ");
 				}

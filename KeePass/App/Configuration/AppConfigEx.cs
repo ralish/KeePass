@@ -293,6 +293,7 @@ namespace KeePass.App.Configuration
 		{
 			ulong uVersion = this.Meta.GetVersion();
 			AceMainWindow aceMW = this.MainWindow;
+			AceSecurity aceSec = this.Security;
 			AceSearch aceSearch = this.Search;
 			AceIntegration aceInt = this.Integration;
 
@@ -316,6 +317,17 @@ namespace KeePass.App.Configuration
 
 			DpiScale();
 
+			// AceFont af = this.UI.PasswordFont;
+			// Debug.Assert(af.GraphicsUnit == GraphicsUnit.Point);
+			// float fSize = ((af.GraphicsUnit == GraphicsUnit.Point) ? af.Size :
+			//	af.ToFont().SizeInPoints);
+			// if(fSize > AceUI.PasswordFontSizeMaximum)
+			// {
+			//	Debug.Assert(false);
+			//	af.Size = AceUI.PasswordFontSizeMaximum;
+			//	af.GraphicsUnit = GraphicsUnit.Point;
+			// }
+
 			if(aceMW.EscMinimizesToTray) // For backward compatibility
 			{
 				aceMW.EscMinimizesToTray = false; // Default value
@@ -334,7 +346,8 @@ namespace KeePass.App.Configuration
 
 			if(NativeLib.IsUnix())
 			{
-				this.Security.MasterKeyOnSecureDesktop = false;
+				aceSec.PreventScreenCapture = false;
+				aceSec.MasterKeyOnSecureDesktop = false;
 
 				aceInt.HotKeyGlobalAutoType = (long)Keys.None;
 				aceInt.HotKeyGlobalAutoTypePassword = (long)Keys.None;
@@ -345,7 +358,7 @@ namespace KeePass.App.Configuration
 
 			if(MonoWorkarounds.IsRequired(1378))
 			{
-				AceWorkspaceLocking aceWL = this.Security.WorkspaceLocking;
+				AceWorkspaceLocking aceWL = aceSec.WorkspaceLocking;
 				aceWL.LockOnSessionSwitch = false;
 				aceWL.LockOnSuspend = false;
 				aceWL.LockOnRemoteControlChange = false;

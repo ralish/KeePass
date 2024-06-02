@@ -94,7 +94,7 @@ namespace KeePass.Forms
 	{
 		public CompositeKey CompositeKey = null;
 
-		internal GAction InvokeAfterClose = null; // Handled by ShowDialog
+		// internal GAction InvokeAfterClose = null; // Handled by ShowDialog
 	}
 
 	internal sealed class KeyPromptFormResult

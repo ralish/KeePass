@@ -162,7 +162,8 @@ namespace KeePass.Ecas
 			}
 			catch(Exception ex)
 			{
-				if(!VistaTaskDialog.ShowMessageBox(ex.Message, KPRes.TriggerExecutionFailed,
+				string str = StrUtil.FormatException(ex, null);
+				if(!VistaTaskDialog.ShowMessageBox(str, KPRes.TriggerExecutionFailed,
 					PwDefs.ShortProductName, VtdIcon.Warning, null))
 				{
 					MessageService.ShowWarning(KPRes.TriggerExecutionFailed + ".", ex);

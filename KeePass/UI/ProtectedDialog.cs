@@ -131,8 +131,8 @@ namespace KeePass.UI
 				if(pNewDesktop == IntPtr.Zero)
 					throw new InvalidOperationException();
 
-				bool bNameSupported = NativeMethods.DesktopNameContains(pNewDesktop,
-					strName).GetValueOrDefault(false);
+				bool bNameSupported = (NativeMethods.DesktopNameContains(
+					pNewDesktop, strName) ?? false);
 				Debug.Assert(bNameSupported);
 
 				stp.ThreadDesktop = pNewDesktop;

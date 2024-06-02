@@ -48,19 +48,16 @@ namespace KeePass.UI
 		public static DialogResult ShowFileSaveQuestion(string strFile,
 			FileSaveOrigin fsOrigin)
 		{
-			bool bFile = ((strFile != null) && (strFile.Length > 0));
+			bool bFile = !string.IsNullOrEmpty(strFile);
 
 			if(WinUtil.IsAtLeastWindowsVista)
 			{
 				VistaTaskDialog dlg = new VistaTaskDialog();
 
-				string strText = KPRes.DatabaseModifiedNoDot;
-				if(bFile) strText += ":\r\n" + strFile;
-				else strText += ".";
-
 				dlg.CommandLinks = true;
+				dlg.Content = (!bFile ? (KPRes.DatabaseModifiedNoDot + ".") :
+					(KPRes.DatabaseFile + ":" + MessageService.NewLine + strFile));
 				dlg.WindowTitle = PwDefs.ShortProductName;
-				dlg.Content = strText;
 				dlg.SetIcon(VtdCustomIcon.Question);
 
 				bool bShowCheckBox = true;
@@ -102,10 +99,12 @@ namespace KeePass.UI
 				}
 			}
 
-			string strMessage = (bFile ? (strFile + MessageService.NewParagraph) : string.Empty);
-			strMessage += KPRes.DatabaseModifiedNoDot + "." +
-				MessageService.NewParagraph + KPRes.SaveBeforeCloseQuestion;
-			return MessageService.Ask(strMessage, KPRes.SaveBeforeCloseTitle,
+			string strMsg = KPRes.DatabaseModifiedNoDot + "." + MessageService.NewParagraph;
+			if(bFile)
+				strMsg += KPRes.DatabaseFile + ":" + MessageService.NewLine +
+					strFile + MessageService.NewParagraph;
+			strMsg += KPRes.SaveBeforeCloseQuestion;
+			return MessageService.Ask(strMsg, KPRes.SaveBeforeCloseTitle,
 				MessageBoxButtons.YesNoCancel);
 		}
 
@@ -146,10 +145,10 @@ namespace KeePass.UI
 			return CheckAttachmentSize(fi.Length, strOp);
 		}
 
-		internal static void ShowConfigError(string strPath, string strError,
+		internal static void ShowConfigError(string strPath, Exception exError,
 			bool bSaving, bool bCreateBackup)
 		{
-			if(string.IsNullOrEmpty(strError)) { Debug.Assert(false); return; }
+			if(exError == null) { Debug.Assert(false); return; }
 
 			StringBuilder sb = new StringBuilder();
 
@@ -161,7 +160,7 @@ namespace KeePass.UI
 
 			sb.AppendLine(bSaving ? KLRes.FileSaveFailed : KLRes.FileLoadFailed);
 			sb.AppendLine();
-			sb.Append(strError);
+			sb.Append(StrUtil.FormatException(exError, null));
 
 			string strText = sb.ToString();
 
@@ -214,6 +213,7 @@ namespace KeePass.UI
 			{
 				FileBrowserForm fbf = new FileBrowserForm();
 				fbf.InitEx(bSaveMode, strTitle, KPRes.SecDeskFileDialogHint, strContext);
+				fbf.SuggestedFile = (strSuggestedFileName ?? string.Empty);
 
 				try
 				{

@@ -109,9 +109,10 @@ namespace KeePass.DataExchange.Formats
 				sOutput.Write(pbKdb, 0, pbKdb.Length);
 				MemUtil.ZeroByteArray(pbKdb);
 			}
-			catch(Exception exKdb)
+			catch(Exception ex)
 			{
-				if(slLogger != null) slLogger.SetText(exKdb.Message, LogStatusType.Error);
+				if(slLogger != null)
+					slLogger.SetText(StrUtil.FormatException(ex, null), LogStatusType.Error);
 
 				return false;
 			}

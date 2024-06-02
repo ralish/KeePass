@@ -321,10 +321,7 @@ namespace KeePass.Ecas
 					Program.MainForm.UIBlockInteraction(false);
 				}
 			}
-			catch(Exception ex)
-			{
-				throw new Exception(strCmd + MessageService.NewParagraph + ex.Message);
-			}
+			catch(Exception ex) { throw new ExtendedException(strCmd, ex); }
 			finally
 			{
 				try { if(p != null) p.Dispose(); }

@@ -46,6 +46,8 @@ namespace KeePass.Forms
 		private uint m_uDefaultIcon = 0;
 		private PwUuid m_puDefaultCustomIcon = PwUuid.Zero;
 
+		private CustomContextMenuStripEx m_ctxCustom = null;
+
 		private uint m_uChosenIcon = 0;
 		private PwUuid m_puChosenCustomIcon = PwUuid.Zero;
 
@@ -113,6 +115,7 @@ namespace KeePass.Forms
 			else { Debug.Assert(false); }
 
 			RecreateCustomIconList(m_puDefaultCustomIcon);
+			CreateCustomContextMenu();
 
 			if(!m_puDefaultCustomIcon.Equals(PwUuid.Zero))
 			{
@@ -128,6 +131,39 @@ namespace KeePass.Forms
 			EnableControlsEx();
 		}
 
+		private void CreateCustomContextMenu()
+		{
+			CustomContextMenuStripEx ctx = new CustomContextMenuStripEx();
+
+			ToolStripMenuItem tsmiRename = new ToolStripMenuItem(KPRes.RenameCmd,
+				Properties.Resources.B16x16_Edit);
+			tsmiRename.Click += delegate(object sender, EventArgs e)
+			{
+				ListView.SelectedListViewItemCollection lvsic = m_lvCustomIcons.SelectedItems;
+				if((lvsic != null) && (lvsic.Count == 1))
+					lvsic[0].BeginEdit();
+			};
+			ctx.Items.Add(tsmiRename);
+
+			ctx.Items.Add(new ToolStripSeparator());
+
+			ToolStripMenuItem tsmiExport = new ToolStripMenuItem(KPRes.ExportCmd,
+				Properties.Resources.B16x16_Folder_Outbox);
+			tsmiExport.Click += ((sender, e) => { ExportCustomIcons(); });
+			ctx.Items.Add(tsmiExport);
+
+			ctx.Opening += delegate(object sender, CancelEventArgs e)
+			{
+				ListView.SelectedListViewItemCollection lvsic = m_lvCustomIcons.SelectedItems;
+				int c = lvsic.Count;
+				tsmiRename.Enabled = ((c == 1) && (lvsic[0].Text != MultipleValuesEx.CueString));
+				tsmiExport.Enabled = (c != 0);
+			};
+
+			m_ctxCustom = ctx;
+			m_lvCustomIcons.ContextMenuStrip = ctx;
+		}
+
 		private void EnableControlsEx()
 		{
 			int cCustom = m_lvCustomIcons.Items.Count;
@@ -141,7 +177,6 @@ namespace KeePass.Forms
 			else m_btnOK.Enabled = false;
 
 			m_btnCustomDelete.Enabled = (cSelCustom >= 1);
-			m_btnCustomExport.Enabled = (cSelCustom >= 1);
 
 			UIUtil.SetEnabledFast((cCustom != 0), m_lblFind, m_tbFind);
 
@@ -307,6 +342,14 @@ namespace KeePass.Forms
 			m_lvIcons.SmallImageList = null;
 			m_lvCustomIcons.SmallImageList = null;
 
+			if(m_ctxCustom != null)
+			{
+				m_lvCustomIcons.ContextMenuStrip = null;
+				m_ctxCustom.Dispose();
+				m_ctxCustom = null;
+			}
+			else { Debug.Assert(false); }
+
 			GlobalWindowManager.RemoveWindow(this);
 		}
 
@@ -373,12 +416,8 @@ namespace KeePass.Forms
 					PwUuid pu = new PwUuid(true);
 					PwCustomIcon ci = new PwCustomIcon(pu, msPng.ToArray());
 
-					// if(bUseFileName)
-					// {
-					//	string strName = UrlUtil.StripExtension(
-					//		UrlUtil.GetFileName(strFile));
-					//	if(!string.IsNullOrEmpty(strName)) ci.Name = strName;
-					// }
+					string strName = UrlUtil.StripExtension(UrlUtil.GetFileName(strFile));
+					if(!string.IsNullOrEmpty(strName)) ci.Name = strName;
 
 					m_pd.CustomIcons.Add(ci);
 					m_pd.UINeedsIconUpdate = true;
@@ -396,7 +435,7 @@ namespace KeePass.Forms
 				}
 				catch(Exception ex)
 				{
-					strError = ex.Message;
+					strError = StrUtil.FormatException(ex, null);
 				}
 				finally { msPng.Close(); }
 
@@ -453,7 +492,7 @@ namespace KeePass.Forms
 			this.DialogResult = DialogResult.OK;
 		}
 
-		private void OnBtnCustomSave(object sender, EventArgs e)
+		private void ExportCustomIcons()
 		{
 			ListView.SelectedListViewItemCollection lvsic = m_lvCustomIcons.SelectedItems;
 			if(lvsic.Count == 0) return;
@@ -611,6 +650,12 @@ namespace KeePass.Forms
 			}
 
 			return base.ProcessCmdKey(ref msg, keyData);
+		}
+
+		private void OnBtnCustomMore(object sender, EventArgs e)
+		{
+			if(m_ctxCustom != null) m_ctxCustom.ShowEx(m_btnCustomMore);
+			else { Debug.Assert(false); }
 		}
 	}
 }

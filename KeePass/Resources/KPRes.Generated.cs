@@ -341,6 +341,7 @@ namespace KeePass.Resources
 			m_strExpiryTime = TryGetEx(dictNew, "ExpiryTime", m_strExpiryTime);
 			m_strExpiryTimeDateOnly = TryGetEx(dictNew, "ExpiryTimeDateOnly", m_strExpiryTimeDateOnly);
 			m_strExport = TryGetEx(dictNew, "Export", m_strExport);
+			m_strExportCmd = TryGetEx(dictNew, "ExportCmd", m_strExportCmd);
 			m_strExportEntriesCmd = TryGetEx(dictNew, "ExportEntriesCmd", m_strExportEntriesCmd);
 			m_strExportEntryCmd = TryGetEx(dictNew, "ExportEntryCmd", m_strExportEntryCmd);
 			m_strExportFileDesc = TryGetEx(dictNew, "ExportFileDesc", m_strExportFileDesc);
@@ -657,6 +658,8 @@ namespace KeePass.Resources
 			m_strOpenUrl = TryGetEx(dictNew, "OpenUrl", m_strOpenUrl);
 			m_strOpenWith = TryGetEx(dictNew, "OpenWith", m_strOpenWith);
 			m_strOptimizeForScreenReader = TryGetEx(dictNew, "OptimizeForScreenReader", m_strOptimizeForScreenReader);
+			m_strOptionActivateAboutTo = TryGetEx(dictNew, "OptionActivateAboutTo", m_strOptionActivateAboutTo);
+			m_strOptionActivateConfirm = TryGetEx(dictNew, "OptionActivateConfirm", m_strOptionActivateConfirm);
 			m_strOptionReqOn = TryGetEx(dictNew, "OptionReqOn", m_strOptionReqOn);
 			m_strOptions = TryGetEx(dictNew, "Options", m_strOptions);
 			m_strOptionsDesc = TryGetEx(dictNew, "OptionsDesc", m_strOptionsDesc);
@@ -733,6 +736,8 @@ namespace KeePass.Resources
 			m_strPolicySaveDatabaseDesc = TryGetEx(dictNew, "PolicySaveDatabaseDesc", m_strPolicySaveDatabaseDesc);
 			m_strPolicyTriggersEditDesc = TryGetEx(dictNew, "PolicyTriggersEditDesc", m_strPolicyTriggersEditDesc);
 			m_strPreReleaseVersion = TryGetEx(dictNew, "PreReleaseVersion", m_strPreReleaseVersion);
+			m_strPreventScreenCapture = TryGetEx(dictNew, "PreventScreenCapture", m_strPreventScreenCapture);
+			m_strPreventScreenCaptureNote = TryGetEx(dictNew, "PreventScreenCaptureNote", m_strPreventScreenCaptureNote);
 			m_strPrint = TryGetEx(dictNew, "Print", m_strPrint);
 			m_strPrintDesc = TryGetEx(dictNew, "PrintDesc", m_strPrintDesc);
 			m_strPrintEntriesCmd = TryGetEx(dictNew, "PrintEntriesCmd", m_strPrintEntriesCmd);
@@ -772,6 +777,7 @@ namespace KeePass.Resources
 			m_strRememberKeySources = TryGetEx(dictNew, "RememberKeySources", m_strRememberKeySources);
 			m_strRememberWorkingDirectories = TryGetEx(dictNew, "RememberWorkingDirectories", m_strRememberWorkingDirectories);
 			m_strRemoteHostReachable = TryGetEx(dictNew, "RemoteHostReachable", m_strRemoteHostReachable);
+			m_strRenameCmd = TryGetEx(dictNew, "RenameCmd", m_strRenameCmd);
 			m_strRepairCmd = TryGetEx(dictNew, "RepairCmd", m_strRepairCmd);
 			m_strRepairMode = TryGetEx(dictNew, "RepairMode", m_strRepairMode);
 			m_strRepairModeInt = TryGetEx(dictNew, "RepairModeInt", m_strRepairModeInt);
@@ -860,7 +866,6 @@ namespace KeePass.Resources
 			m_strSoonToExpireEntries = TryGetEx(dictNew, "SoonToExpireEntries", m_strSoonToExpireEntries);
 			m_strSource = TryGetEx(dictNew, "Source", m_strSource);
 			m_strSpecialKeys = TryGetEx(dictNew, "SpecialKeys", m_strSpecialKeys);
-			m_strSslCertsAcceptInvalid = TryGetEx(dictNew, "SslCertsAcceptInvalid", m_strSslCertsAcceptInvalid);
 			m_strStandardExpireSelect = TryGetEx(dictNew, "StandardExpireSelect", m_strStandardExpireSelect);
 			m_strStandardFields = TryGetEx(dictNew, "StandardFields", m_strStandardFields);
 			m_strStartAndExit = TryGetEx(dictNew, "StartAndExit", m_strStartAndExit);
@@ -901,6 +906,7 @@ namespace KeePass.Resources
 			m_strTimerRestartOnActivity = TryGetEx(dictNew, "TimerRestartOnActivity", m_strTimerRestartOnActivity);
 			m_strTimeSpan = TryGetEx(dictNew, "TimeSpan", m_strTimeSpan);
 			m_strTitle = TryGetEx(dictNew, "Title", m_strTitle);
+			m_strTlsCertsAcceptInvalid = TryGetEx(dictNew, "TlsCertsAcceptInvalid", m_strTlsCertsAcceptInvalid);
 			m_strToggle = TryGetEx(dictNew, "Toggle", m_strToggle);
 			m_strTogglePasswordAsterisks = TryGetEx(dictNew, "TogglePasswordAsterisks", m_strTogglePasswordAsterisks);
 			m_strTooManyFilesError = TryGetEx(dictNew, "TooManyFilesError", m_strTooManyFilesError);
@@ -1315,6 +1321,7 @@ namespace KeePass.Resources
 			"ExpiryTime",
 			"ExpiryTimeDateOnly",
 			"Export",
+			"ExportCmd",
 			"ExportEntriesCmd",
 			"ExportEntryCmd",
 			"ExportFileDesc",
@@ -1631,6 +1638,8 @@ namespace KeePass.Resources
 			"OpenUrl",
 			"OpenWith",
 			"OptimizeForScreenReader",
+			"OptionActivateAboutTo",
+			"OptionActivateConfirm",
 			"OptionReqOn",
 			"Options",
 			"OptionsDesc",
@@ -1707,6 +1716,8 @@ namespace KeePass.Resources
 			"PolicySaveDatabaseDesc",
 			"PolicyTriggersEditDesc",
 			"PreReleaseVersion",
+			"PreventScreenCapture",
+			"PreventScreenCaptureNote",
 			"Print",
 			"PrintDesc",
 			"PrintEntriesCmd",
@@ -1746,6 +1757,7 @@ namespace KeePass.Resources
 			"RememberKeySources",
 			"RememberWorkingDirectories",
 			"RemoteHostReachable",
+			"RenameCmd",
 			"RepairCmd",
 			"RepairMode",
 			"RepairModeInt",
@@ -1834,7 +1846,6 @@ namespace KeePass.Resources
 			"SoonToExpireEntries",
 			"Source",
 			"SpecialKeys",
-			"SslCertsAcceptInvalid",
 			"StandardExpireSelect",
 			"StandardFields",
 			"StartAndExit",
@@ -1875,6 +1886,7 @@ namespace KeePass.Resources
 			"TimerRestartOnActivity",
 			"TimeSpan",
 			"Title",
+			"TlsCertsAcceptInvalid",
 			"Toggle",
 			"TogglePasswordAsterisks",
 			"TooManyFilesError",
@@ -4355,10 +4367,10 @@ namespace KeePass.Resources
 		}
 
 		private static string m_strDatabaseModifiedNoDot =
-			@"The current database file has been modified";
+			@"The database has been modified";
 		/// <summary>
 		/// Look up a localized string similar to
-		/// 'The current database file has been modified'.
+		/// 'The database has been modified'.
 		/// </summary>
 		public static string DatabaseModifiedNoDot
 		{
@@ -5441,6 +5453,17 @@ namespace KeePass.Resources
 		public static string Export
 		{
 			get { return m_strExport; }
+		}
+
+		private static string m_strExportCmd =
+			@"&Export...";
+		/// <summary>
+		/// Look up a localized string similar to
+		/// '&amp;Export...'.
+		/// </summary>
+		public static string ExportCmd
+		{
+			get { return m_strExportCmd; }
 		}
 
 		private static string m_strExportEntriesCmd =
@@ -8919,6 +8942,28 @@ namespace KeePass.Resources
 			get { return m_strOptimizeForScreenReader; }
 		}
 
+		private static string m_strOptionActivateAboutTo =
+			@"You are about to activate the following option:";
+		/// <summary>
+		/// Look up a localized string similar to
+		/// 'You are about to activate the following option:'.
+		/// </summary>
+		public static string OptionActivateAboutTo
+		{
+			get { return m_strOptionActivateAboutTo; }
+		}
+
+		private static string m_strOptionActivateConfirm =
+			@"Are you sure you want to activate the option?";
+		/// <summary>
+		/// Look up a localized string similar to
+		/// 'Are you sure you want to activate the option?'.
+		/// </summary>
+		public static string OptionActivateConfirm
+		{
+			get { return m_strOptionActivateConfirm; }
+		}
+
 		private static string m_strOptionReqOn =
 			@"For this operation, the following option must be turned on:";
 		/// <summary>
@@ -9755,6 +9800,28 @@ namespace KeePass.Resources
 			get { return m_strPreReleaseVersion; }
 		}
 
+		private static string m_strPreventScreenCapture =
+			@"Prevent certain screen captures";
+		/// <summary>
+		/// Look up a localized string similar to
+		/// 'Prevent certain screen captures'.
+		/// </summary>
+		public static string PreventScreenCapture
+		{
+			get { return m_strPreventScreenCapture; }
+		}
+
+		private static string m_strPreventScreenCaptureNote =
+			@"This may also prevent legitimate other software (remote desktop solutions, accessibility tools such as screen magnifiers, etc.) from seeing KeePass windows.";
+		/// <summary>
+		/// Look up a localized string similar to
+		/// 'This may also prevent legitimate other software (remote desktop solutions, accessibility tools such as screen magnifiers, etc.) from seeing KeePass windows.'.
+		/// </summary>
+		public static string PreventScreenCaptureNote
+		{
+			get { return m_strPreventScreenCaptureNote; }
+		}
+
 		private static string m_strPrint =
 			@"Print";
 		/// <summary>
@@ -10182,6 +10249,17 @@ namespace KeePass.Resources
 		public static string RemoteHostReachable
 		{
 			get { return m_strRemoteHostReachable; }
+		}
+
+		private static string m_strRenameCmd =
+			@"&Rename...";
+		/// <summary>
+		/// Look up a localized string similar to
+		/// '&amp;Rename...'.
+		/// </summary>
+		public static string RenameCmd
+		{
+			get { return m_strRenameCmd; }
 		}
 
 		private static string m_strRepairCmd =
@@ -11152,17 +11230,6 @@ namespace KeePass.Resources
 			get { return m_strSpecialKeys; }
 		}
 
-		private static string m_strSslCertsAcceptInvalid =
-			@"Accept invalid SSL certificates (self-signed, expired, ...)";
-		/// <summary>
-		/// Look up a localized string similar to
-		/// 'Accept invalid SSL certificates (self-signed, expired, ...)'.
-		/// </summary>
-		public static string SslCertsAcceptInvalid
-		{
-			get { return m_strSslCertsAcceptInvalid; }
-		}
-
 		private static string m_strStandardExpireSelect =
 			@"Select one of the standard expiry times";
 		/// <summary>
@@ -11601,6 +11668,17 @@ namespace KeePass.Resources
 		public static string Title
 		{
 			get { return m_strTitle; }
+		}
+
+		private static string m_strTlsCertsAcceptInvalid =
+			@"Accept invalid TLS/SSL certificates (self-signed, expired, ...)";
+		/// <summary>
+		/// Look up a localized string similar to
+		/// 'Accept invalid TLS/SSL certificates (self-signed, expired, ...)'.
+		/// </summary>
+		public static string TlsCertsAcceptInvalid
+		{
+			get { return m_strTlsCertsAcceptInvalid; }
 		}
 
 		private static string m_strToggle =

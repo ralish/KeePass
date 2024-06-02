@@ -111,13 +111,13 @@ namespace KeePass.Util
 			}
 		}
 
-		internal const string ClipFormatGroup = "Group-F"; // F = flags
+		private const string ClipFormatGroup = "Group-F"; // F = flags
 		// Old format name (<= 2.14): "KeePassEntriesCF",
 		// old format name (<= 2.22): "KeePassEntriesCX",
 		// old format name (<= 2.40): "KeePassEntries",
 		// old format name (<= 2.41): media type "vnd" + "Entries-E" // E = encrypted
-		internal const string ClipFormatEntry = "Entry-F"; // F = flags
-		internal const string ClipFormatEntries = "Entries-F"; // F = flags
+		private const string ClipFormatEntry = "Entry-F"; // F = flags
+		private const string ClipFormatEntries = "Entries-F"; // F = flags
 		private static readonly byte[] ClipDomainSep = new byte[] {
 			0xF8, 0x03, 0xFA, 0x51, 0x87, 0x18, 0x49, 0x5D };
 
@@ -181,6 +181,37 @@ namespace KeePass.Util
 				string strF = ((vEntries.Length >= 2) ? ClipFormatEntries : ClipFormatEntry);
 				CopyDataToClipboard(ms.ToArray(), strF, hOwner, bEncrypt);
 			}
+		}
+
+		internal static bool CanPasteGroup(PwGroup pgStorage)
+		{
+			try
+			{
+				return ((pgStorage != null) && ClipboardUtil.ContainsData(ClipFormatGroup));
+			}
+			catch(Exception) { Debug.Assert(false); } // Clipboard access timeout
+
+			return false;
+		}
+
+		internal static bool CanPasteEntries(PwGroup pgStorage, out bool b1Entry)
+		{
+			b1Entry = false;
+			if(pgStorage == null) return false;
+
+			try
+			{
+				if(ClipboardUtil.ContainsData(ClipFormatEntry))
+				{
+					b1Entry = true;
+					return true;
+				}
+				if(ClipboardUtil.ContainsData(ClipFormatEntries))
+					return true;
+			}
+			catch(Exception) { Debug.Assert(false); } // Clipboard access timeout
+
+			return false;
 		}
 
 		private static byte[] GetClipboardData(string strFormat)
