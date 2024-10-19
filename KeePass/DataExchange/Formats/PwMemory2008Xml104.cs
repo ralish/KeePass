@@ -28,7 +28,6 @@ using KeePass.Resources;
 
 using KeePassLib;
 using KeePassLib.Interfaces;
-using KeePassLib.Security;
 using KeePassLib.Utility;
 
 namespace KeePass.DataExchange.Formats
@@ -43,7 +42,7 @@ namespace KeePass.DataExchange.Formats
 		public override string DefaultExtension { get { return "xml"; } }
 		public override string ApplicationGroup { get { return KPRes.PasswordManagers; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
 			string str = Preprocess(sInput);
@@ -66,13 +65,13 @@ namespace KeePass.DataExchange.Formats
 
 				string strGroup = vCells[4];
 				PwGroup pg;
-				if(strGroup == ".") pg = pwStorage.RootGroup;
+				if(strGroup == ".") pg = pdStorage.RootGroup;
 				else if(vGroups.ContainsKey(strGroup)) pg = vGroups[strGroup];
 				else
 				{
 					pg = new PwGroup(true, true);
 					pg.Name = strGroup;
-					pwStorage.RootGroup.AddGroup(pg, true);
+					pdStorage.RootGroup.AddGroup(pg, true);
 
 					vGroups[strGroup] = pg;
 				}
@@ -81,22 +80,17 @@ namespace KeePass.DataExchange.Formats
 				pg.AddEntry(pe, true);
 
 				if(vCells[1] != ".")
-					pe.Strings.Set(PwDefs.TitleField, new ProtectedString(
-						pwStorage.MemoryProtection.ProtectTitle, vCells[1]));
+					ImportUtil.Add(pe, PwDefs.TitleField, vCells[1], pdStorage);
 				if(vCells[2] != ".")
-					pe.Strings.Set(PwDefs.UserNameField, new ProtectedString(
-						pwStorage.MemoryProtection.ProtectUserName, vCells[2]));
+					ImportUtil.Add(pe, PwDefs.UserNameField, vCells[2], pdStorage);
 				if(vCells[3] != ".")
-					pe.Strings.Set(PwDefs.PasswordField, new ProtectedString(
-						pwStorage.MemoryProtection.ProtectPassword, vCells[3]));
+					ImportUtil.Add(pe, PwDefs.PasswordField, vCells[3], pdStorage);
 			}
 		}
 
 		private static string Preprocess(Stream sInput)
 		{
-			StreamReader sr = new StreamReader(sInput, Encoding.UTF8);
-			string str = sr.ReadToEnd();
-			sr.Close();
+			string str = MemUtil.ReadString(sInput, Encoding.UTF8);
 
 			const string strStartTag = "<IMAGE";
 			const string strEndTag = "</IMAGE>";

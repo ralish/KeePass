@@ -42,10 +42,10 @@ namespace KeePass.DataExchange.Formats
 
 		public override bool SupportsUuids { get { return true; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			KdbxFile kdbx = new KdbxFile(pwStorage);
+			KdbxFile kdbx = new KdbxFile(pdStorage);
 			kdbx.Load(sInput, KdbxFormat.PlainXml, slLogger);
 		}
 

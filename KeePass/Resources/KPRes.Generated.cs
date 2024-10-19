@@ -29,6 +29,7 @@ namespace KeePass.Resources
 			m_strAbort = TryGetEx(dictNew, "Abort", m_strAbort);
 			m_strAbortTrigger = TryGetEx(dictNew, "AbortTrigger", m_strAbortTrigger);
 			m_strAction = TryGetEx(dictNew, "Action", m_strAction);
+			m_strActionLower = TryGetEx(dictNew, "ActionLower", m_strActionLower);
 			m_strActivateDatabaseTab = TryGetEx(dictNew, "ActivateDatabaseTab", m_strActivateDatabaseTab);
 			m_strActive = TryGetEx(dictNew, "Active", m_strActive);
 			m_strAddEntry = TryGetEx(dictNew, "AddEntry", m_strAddEntry);
@@ -365,6 +366,7 @@ namespace KeePass.Resources
 			m_strFieldRefMultiMatchHint = TryGetEx(dictNew, "FieldRefMultiMatchHint", m_strFieldRefMultiMatchHint);
 			m_strFieldValue = TryGetEx(dictNew, "FieldValue", m_strFieldValue);
 			m_strFile = TryGetEx(dictNew, "File", m_strFile);
+			m_strFileArgsDetailsHint = TryGetEx(dictNew, "FileArgsDetailsHint", m_strFileArgsDetailsHint);
 			m_strFileChanged = TryGetEx(dictNew, "FileChanged", m_strFileChanged);
 			m_strFileChangedOverwrite = TryGetEx(dictNew, "FileChangedOverwrite", m_strFileChangedOverwrite);
 			m_strFileChangedSync = TryGetEx(dictNew, "FileChangedSync", m_strFileChangedSync);
@@ -483,7 +485,6 @@ namespace KeePass.Resources
 			m_strInterval = TryGetEx(dictNew, "Interval", m_strInterval);
 			m_strInvalid = TryGetEx(dictNew, "Invalid", m_strInvalid);
 			m_strInvalidUrl = TryGetEx(dictNew, "InvalidUrl", m_strInvalidUrl);
-			m_strInvalidUserPassword = TryGetEx(dictNew, "InvalidUserPassword", m_strInvalidUserPassword);
 			m_strIOConnection = TryGetEx(dictNew, "IOConnection", m_strIOConnection);
 			m_strIOConnectionLong = TryGetEx(dictNew, "IOConnectionLong", m_strIOConnectionLong);
 			m_strItalic = TryGetEx(dictNew, "Italic", m_strItalic);
@@ -703,6 +704,7 @@ namespace KeePass.Resources
 			m_strPickField = TryGetEx(dictNew, "PickField", m_strPickField);
 			m_strPickFieldDesc = TryGetEx(dictNew, "PickFieldDesc", m_strPickFieldDesc);
 			m_strPickIcon = TryGetEx(dictNew, "PickIcon", m_strPickIcon);
+			m_strPlhSprConfirm = TryGetEx(dictNew, "PlhSprConfirm", m_strPlhSprConfirm);
 			m_strPlugin = TryGetEx(dictNew, "Plugin", m_strPlugin);
 			m_strPlugin1x = TryGetEx(dictNew, "Plugin1x", m_strPlugin1x);
 			m_strPlugin1xHint = TryGetEx(dictNew, "Plugin1xHint", m_strPlugin1xHint);
@@ -791,6 +793,7 @@ namespace KeePass.Resources
 			m_strRetry = TryGetEx(dictNew, "Retry", m_strRetry);
 			m_strRetryCmd = TryGetEx(dictNew, "RetryCmd", m_strRetryCmd);
 			m_strRootDirectory = TryGetEx(dictNew, "RootDirectory", m_strRootDirectory);
+			m_strRunOpenFileQ = TryGetEx(dictNew, "RunOpenFileQ", m_strRunOpenFileQ);
 			m_strSameKeybLayout = TryGetEx(dictNew, "SameKeybLayout", m_strSameKeybLayout);
 			m_strSampleEntry = TryGetEx(dictNew, "SampleEntry", m_strSampleEntry);
 			m_strSave = TryGetEx(dictNew, "Save", m_strSave);
@@ -866,6 +869,7 @@ namespace KeePass.Resources
 			m_strSoonToExpireEntries = TryGetEx(dictNew, "SoonToExpireEntries", m_strSoonToExpireEntries);
 			m_strSource = TryGetEx(dictNew, "Source", m_strSource);
 			m_strSpecialKeys = TryGetEx(dictNew, "SpecialKeys", m_strSpecialKeys);
+			m_strSprPlhQ = TryGetEx(dictNew, "SprPlhQ", m_strSprPlhQ);
 			m_strStandardExpireSelect = TryGetEx(dictNew, "StandardExpireSelect", m_strStandardExpireSelect);
 			m_strStandardFields = TryGetEx(dictNew, "StandardFields", m_strStandardFields);
 			m_strStartAndExit = TryGetEx(dictNew, "StartAndExit", m_strStartAndExit);
@@ -949,6 +953,7 @@ namespace KeePass.Resources
 			m_strUpdateCheckResults = TryGetEx(dictNew, "UpdateCheckResults", m_strUpdateCheckResults);
 			m_strUpdatedUIState = TryGetEx(dictNew, "UpdatedUIState", m_strUpdatedUIState);
 			m_strUpToDate = TryGetEx(dictNew, "UpToDate", m_strUpToDate);
+			m_strUriRunConfirm = TryGetEx(dictNew, "UriRunConfirm", m_strUriRunConfirm);
 			m_strUrl = TryGetEx(dictNew, "Url", m_strUrl);
 			m_strUrlFieldEmptyFirstTab = TryGetEx(dictNew, "UrlFieldEmptyFirstTab", m_strUrlFieldEmptyFirstTab);
 			m_strUrlOpenDesc = TryGetEx(dictNew, "UrlOpenDesc", m_strUrlOpenDesc);
@@ -962,7 +967,6 @@ namespace KeePass.Resources
 			m_strURtfSuggestion = TryGetEx(dictNew, "URtfSuggestion", m_strURtfSuggestion);
 			m_strUseFileLocks = TryGetEx(dictNew, "UseFileLocks", m_strUseFileLocks);
 			m_strUserName = TryGetEx(dictNew, "UserName", m_strUserName);
-			m_strUserNamePrompt = TryGetEx(dictNew, "UserNamePrompt", m_strUserNamePrompt);
 			m_strUserNameStc = TryGetEx(dictNew, "UserNameStc", m_strUserNameStc);
 			m_strUseTransactedConfigWrites = TryGetEx(dictNew, "UseTransactedConfigWrites", m_strUseTransactedConfigWrites);
 			m_strUseTransactedDatabaseWrites = TryGetEx(dictNew, "UseTransactedDatabaseWrites", m_strUseTransactedDatabaseWrites);
@@ -984,8 +988,6 @@ namespace KeePass.Resources
 			m_strWarning = TryGetEx(dictNew, "Warning", m_strWarning);
 			m_strWarnings = TryGetEx(dictNew, "Warnings", m_strWarnings);
 			m_strWebBrowser = TryGetEx(dictNew, "WebBrowser", m_strWebBrowser);
-			m_strWebSiteLogin = TryGetEx(dictNew, "WebSiteLogin", m_strWebSiteLogin);
-			m_strWebSites = TryGetEx(dictNew, "WebSites", m_strWebSites);
 			m_strWindowsFavorites = TryGetEx(dictNew, "WindowsFavorites", m_strWindowsFavorites);
 			m_strWindowsOS = TryGetEx(dictNew, "WindowsOS", m_strWindowsOS);
 			m_strWindowStyle = TryGetEx(dictNew, "WindowStyle", m_strWindowStyle);
@@ -1009,6 +1011,7 @@ namespace KeePass.Resources
 			"Abort",
 			"AbortTrigger",
 			"Action",
+			"ActionLower",
 			"ActivateDatabaseTab",
 			"Active",
 			"AddEntry",
@@ -1345,6 +1348,7 @@ namespace KeePass.Resources
 			"FieldRefMultiMatchHint",
 			"FieldValue",
 			"File",
+			"FileArgsDetailsHint",
 			"FileChanged",
 			"FileChangedOverwrite",
 			"FileChangedSync",
@@ -1463,7 +1467,6 @@ namespace KeePass.Resources
 			"Interval",
 			"Invalid",
 			"InvalidUrl",
-			"InvalidUserPassword",
 			"IOConnection",
 			"IOConnectionLong",
 			"Italic",
@@ -1683,6 +1686,7 @@ namespace KeePass.Resources
 			"PickField",
 			"PickFieldDesc",
 			"PickIcon",
+			"PlhSprConfirm",
 			"Plugin",
 			"Plugin1x",
 			"Plugin1xHint",
@@ -1771,6 +1775,7 @@ namespace KeePass.Resources
 			"Retry",
 			"RetryCmd",
 			"RootDirectory",
+			"RunOpenFileQ",
 			"SameKeybLayout",
 			"SampleEntry",
 			"Save",
@@ -1846,6 +1851,7 @@ namespace KeePass.Resources
 			"SoonToExpireEntries",
 			"Source",
 			"SpecialKeys",
+			"SprPlhQ",
 			"StandardExpireSelect",
 			"StandardFields",
 			"StartAndExit",
@@ -1929,6 +1935,7 @@ namespace KeePass.Resources
 			"UpdateCheckResults",
 			"UpdatedUIState",
 			"UpToDate",
+			"UriRunConfirm",
 			"Url",
 			"UrlFieldEmptyFirstTab",
 			"UrlOpenDesc",
@@ -1942,7 +1949,6 @@ namespace KeePass.Resources
 			"URtfSuggestion",
 			"UseFileLocks",
 			"UserName",
-			"UserNamePrompt",
 			"UserNameStc",
 			"UseTransactedConfigWrites",
 			"UseTransactedDatabaseWrites",
@@ -1964,8 +1970,6 @@ namespace KeePass.Resources
 			"Warning",
 			"Warnings",
 			"WebBrowser",
-			"WebSiteLogin",
-			"WebSites",
 			"WindowsFavorites",
 			"WindowsOS",
 			"WindowStyle",
@@ -2021,6 +2025,17 @@ namespace KeePass.Resources
 		public static string Action
 		{
 			get { return m_strAction; }
+		}
+
+		private static string m_strActionLower =
+			@"action";
+		/// <summary>
+		/// Look up a localized string similar to
+		/// 'action'.
+		/// </summary>
+		public static string ActionLower
+		{
+			get { return m_strActionLower; }
 		}
 
 		private static string m_strActivateDatabaseTab =
@@ -5719,6 +5734,17 @@ namespace KeePass.Resources
 			get { return m_strFile; }
 		}
 
+		private static string m_strFileArgsDetailsHint =
+			@"Click on 'Details' if you want to see the compiled file path/arguments (data is not hidden using asterisks).";
+		/// <summary>
+		/// Look up a localized string similar to
+		/// 'Click on &#39;Details&#39; if you want to see the compiled file path/arguments (data is not hidden using asterisks).'.
+		/// </summary>
+		public static string FileArgsDetailsHint
+		{
+			get { return m_strFileArgsDetailsHint; }
+		}
+
 		private static string m_strFileChanged =
 			@"The file on disk/server has changed since it was loaded. Probably someone else has edited and saved the database.";
 		/// <summary>
@@ -7015,17 +7041,6 @@ namespace KeePass.Resources
 		public static string InvalidUrl
 		{
 			get { return m_strInvalidUrl; }
-		}
-
-		private static string m_strInvalidUserPassword =
-			@"The specified user name / password combination is invalid.";
-		/// <summary>
-		/// Look up a localized string similar to
-		/// 'The specified user name / password combination is invalid.'.
-		/// </summary>
-		public static string InvalidUserPassword
-		{
-			get { return m_strInvalidUserPassword; }
 		}
 
 		private static string m_strIOConnection =
@@ -9437,6 +9452,17 @@ namespace KeePass.Resources
 			get { return m_strPickIcon; }
 		}
 
+		private static string m_strPlhSprConfirm =
+			@"Show confirmation dialog when evaluating/replacing a '{PARAM}' placeholder";
+		/// <summary>
+		/// Look up a localized string similar to
+		/// 'Show confirmation dialog when evaluating/replacing a &#39;{PARAM}&#39; placeholder'.
+		/// </summary>
+		public static string PlhSprConfirm
+		{
+			get { return m_strPlhSprConfirm; }
+		}
+
 		private static string m_strPlugin =
 			@"Plugin";
 		/// <summary>
@@ -10405,6 +10431,17 @@ namespace KeePass.Resources
 			get { return m_strRootDirectory; }
 		}
 
+		private static string m_strRunOpenFileQ =
+			@"Are you sure you want to run/open the file?";
+		/// <summary>
+		/// Look up a localized string similar to
+		/// 'Are you sure you want to run/open the file?'.
+		/// </summary>
+		public static string RunOpenFileQ
+		{
+			get { return m_strRunOpenFileQ; }
+		}
+
 		private static string m_strSameKeybLayout =
 			@"Ensure same keyboard layouts during auto-type";
 		/// <summary>
@@ -11228,6 +11265,17 @@ namespace KeePass.Resources
 		public static string SpecialKeys
 		{
 			get { return m_strSpecialKeys; }
+		}
+
+		private static string m_strSprPlhQ =
+			@"Are you sure you want to evaluate/replace the placeholder?";
+		/// <summary>
+		/// Look up a localized string similar to
+		/// 'Are you sure you want to evaluate/replace the placeholder?'.
+		/// </summary>
+		public static string SprPlhQ
+		{
+			get { return m_strSprPlhQ; }
 		}
 
 		private static string m_strStandardExpireSelect =
@@ -12143,6 +12191,17 @@ namespace KeePass.Resources
 			get { return m_strUpToDate; }
 		}
 
+		private static string m_strUriRunConfirm =
+			@"Show confirmation dialog when running/opening a '{PARAM}' URI";
+		/// <summary>
+		/// Look up a localized string similar to
+		/// 'Show confirmation dialog when running/opening a &#39;{PARAM}&#39; URI'.
+		/// </summary>
+		public static string UriRunConfirm
+		{
+			get { return m_strUriRunConfirm; }
+		}
+
 		private static string m_strUrl =
 			@"URL";
 		/// <summary>
@@ -12284,17 +12343,6 @@ namespace KeePass.Resources
 		public static string UserName
 		{
 			get { return m_strUserName; }
-		}
-
-		private static string m_strUserNamePrompt =
-			@"Enter the user name:";
-		/// <summary>
-		/// Look up a localized string similar to
-		/// 'Enter the user name:'.
-		/// </summary>
-		public static string UserNamePrompt
-		{
-			get { return m_strUserNamePrompt; }
 		}
 
 		private static string m_strUserNameStc =
@@ -12526,28 +12574,6 @@ namespace KeePass.Resources
 		public static string WebBrowser
 		{
 			get { return m_strWebBrowser; }
-		}
-
-		private static string m_strWebSiteLogin =
-			@"Web Site Login";
-		/// <summary>
-		/// Look up a localized string similar to
-		/// 'Web Site Login'.
-		/// </summary>
-		public static string WebSiteLogin
-		{
-			get { return m_strWebSiteLogin; }
-		}
-
-		private static string m_strWebSites =
-			@"Web Sites";
-		/// <summary>
-		/// Look up a localized string similar to
-		/// 'Web Sites'.
-		/// </summary>
-		public static string WebSites
-		{
-			get { return m_strWebSites; }
 		}
 
 		private static string m_strWindowsFavorites =

@@ -44,14 +44,12 @@ namespace KeePass.DataExchange.Formats
 
 		public override bool ImportAppendsToRootGroupOnly { get { return true; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			StreamReader sr = new StreamReader(sInput, Encoding.Default);
-			string strDocument = sr.ReadToEnd();
-			sr.Close();
+			string strDocument = MemUtil.ReadString(sInput, Encoding.Default);
 
-			PwGroup pg = pwStorage.RootGroup;
+			PwGroup pg = pdStorage.RootGroup;
 
 			CharStream cs = new CharStream(strDocument);
 			string[] vFields = new string[7];
@@ -90,14 +88,10 @@ namespace KeePass.DataExchange.Formats
 				PwEntry pe = new PwEntry(true, true);
 				pg.AddEntry(pe, true);
 
-				pe.Strings.Set(PwDefs.TitleField, new ProtectedString(
-					pwStorage.MemoryProtection.ProtectTitle, vFields[0]));
-				pe.Strings.Set(PwDefs.UserNameField, new ProtectedString(
-					pwStorage.MemoryProtection.ProtectUserName, vFields[1]));
-				pe.Strings.Set(PwDefs.PasswordField, new ProtectedString(
-					pwStorage.MemoryProtection.ProtectPassword, vFields[2]));
-				pe.Strings.Set(PwDefs.NotesField, new ProtectedString(
-					pwStorage.MemoryProtection.ProtectNotes, vFields[3]));
+				ImportUtil.Add(pe, PwDefs.TitleField, vFields[0], pdStorage);
+				ImportUtil.Add(pe, PwDefs.UserNameField, vFields[1], pdStorage);
+				ImportUtil.Add(pe, PwDefs.PasswordField, vFields[2], pdStorage);
+				ImportUtil.Add(pe, PwDefs.NotesField, vFields[3], pdStorage);
 
 				pe.Expires = (vFields[4] == "true");
 
@@ -115,8 +109,7 @@ namespace KeePass.DataExchange.Formats
 				}
 				catch(Exception) { Debug.Assert(false); }
 
-				pe.Strings.Set("Days To Live", new ProtectedString(false,
-					vFields[6]));
+				ImportUtil.Add(pe, "Days To Live", vFields[6], pdStorage);
 			}
 		}
 

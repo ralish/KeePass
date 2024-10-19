@@ -20,7 +20,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Text;
 
@@ -28,7 +27,7 @@ using KeePass.Resources;
 
 using KeePassLib;
 using KeePassLib.Interfaces;
-using KeePassLib.Security;
+using KeePassLib.Utility;
 
 namespace KeePass.DataExchange.Formats
 {
@@ -42,16 +41,13 @@ namespace KeePass.DataExchange.Formats
 		public override string DefaultExtension { get { return "csv"; } }
 		public override string ApplicationGroup { get { return KPRes.PasswordManagers; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			StreamReader sr = new StreamReader(sInput, Encoding.Default);
-			string strData = sr.ReadToEnd();
-			sr.Close();
-			sInput.Close();
+			string strData = MemUtil.ReadString(sInput, Encoding.Default);
 
 			Dictionary<string, PwGroup> dGroups = new Dictionary<string, PwGroup>();
-			dGroups[string.Empty] = pwStorage.RootGroup;
+			dGroups[string.Empty] = pdStorage.RootGroup;
 
 			CsvOptions opt = new CsvOptions();
 			opt.BackslashIsEscape = false;
@@ -104,13 +100,13 @@ namespace KeePass.DataExchange.Formats
 						if(!string.IsNullOrEmpty(strMapped)) strKey = strMapped;
 					}
 
-					ImportUtil.AppendToField(pe, strKey, strValue, pwStorage);
+					ImportUtil.Add(pe, strKey, strValue, pdStorage);
 				}
 
-				ImportUtil.AppendToField(pe, PwDefs.NotesField, v[20], pwStorage,
+				ImportUtil.AppendToField(pe, PwDefs.NotesField, v[20], pdStorage,
 					"\r\n\r\n", false);
 				if(v[21].Length > 0)
-					ImportUtil.AppendToField(pe, "Login URL", v[21], pwStorage, null, true);
+					ImportUtil.Add(pe, "Login URL", v[21], pdStorage);
 			}
 		}
 	}

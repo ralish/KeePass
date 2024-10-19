@@ -89,6 +89,12 @@ namespace KeePass.Resources
 		}
 
 		[Obsolete]
+		public static string InvalidUserPassword
+		{
+			get { return (KPRes.Invalid + " (" + KPRes.UserName + " / " + KPRes.Password + ")!"); }
+		}
+
+		[Obsolete]
 		public static string NewDatabaseFileName
 		{
 			get { return (KPRes.Database + "." + AppDefs.FileExtension.FileExt); }
@@ -134,6 +140,24 @@ namespace KeePass.Resources
 		public static string UnknownError
 		{
 			get { return KLRes.UnknownError; }
+		}
+
+		[Obsolete]
+		public static string UserNamePrompt
+		{
+			get { return (KPRes.UserNameStc + ":"); }
+		}
+
+		[Obsolete]
+		public static string WebSiteLogin
+		{
+			get { return "Web Site Login"; }
+		}
+
+		[Obsolete]
+		public static string WebSites
+		{
+			get { return "Web Sites"; }
 		}
 	}
 }

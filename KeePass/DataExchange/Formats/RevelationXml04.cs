@@ -43,18 +43,13 @@ namespace KeePass.DataExchange.Formats
 		public override string DefaultExtension { get { return "xml"; } }
 		public override string ApplicationGroup { get { return KPRes.PasswordManagers; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			StreamReader sr = new StreamReader(sInput, Encoding.UTF8);
-			string strDoc = sr.ReadToEnd();
-			sr.Close();
+			XmlDocument xd = XmlUtilEx.LoadXmlDocument(sInput, StrUtil.Utf8);
 
-			XmlDocument doc = XmlUtilEx.CreateXmlDocument();
-			doc.LoadXml(strDoc);
-
-			ProcessEntries(pwStorage, pwStorage.RootGroup,
-				doc.DocumentElement.ChildNodes);
+			ProcessEntries(pdStorage, pdStorage.RootGroup,
+				xd.DocumentElement.ChildNodes);
 		}
 
 		private static void ProcessEntries(PwDatabase pd, PwGroup pgParent,
@@ -104,11 +99,9 @@ namespace KeePass.DataExchange.Formats
 			foreach(XmlNode xmlChild in xmlNode.ChildNodes)
 			{
 				if(xmlChild.Name == "name")
-					pe.Strings.Set(PwDefs.TitleField, new ProtectedString(
-						pd.MemoryProtection.ProtectTitle, XmlUtil.SafeInnerText(xmlChild)));
+					ImportUtil.Add(pe, PwDefs.TitleField, xmlChild, pd);
 				else if(xmlChild.Name == "description")
-					pe.Strings.Set(PwDefs.NotesField, new ProtectedString(
-						pd.MemoryProtection.ProtectNotes, XmlUtil.SafeInnerText(xmlChild)));
+					ImportUtil.Add(pe, PwDefs.NotesField, xmlChild, pd);
 				else if(xmlChild.Name == "updated")
 					pe.LastModificationTime = ImportTime(xmlChild);
 				else if(xmlChild.Name == "field")
@@ -117,17 +110,15 @@ namespace KeePass.DataExchange.Formats
 					if(xnName == null) { Debug.Assert(false); }
 					else
 					{
-						KeyValuePair<string, bool> kvp = MapFieldName(xnName.Value, pd);
-						pe.Strings.Set(kvp.Key, new ProtectedString(kvp.Value,
-							XmlUtil.SafeInnerText(xmlChild)));
+						string strName = MapFieldName(xnName.Value);
+						ImportUtil.Add(pe, strName, xmlChild, pd);
 					}
 				}
 				else { Debug.Assert(false); }
 			}
 		}
 
-		private static KeyValuePair<string, bool> MapFieldName(string strFieldName,
-			PwDatabase pdContext)
+		private static string MapFieldName(string strFieldName)
 		{
 			switch(strFieldName)
 			{
@@ -135,39 +126,36 @@ namespace KeePass.DataExchange.Formats
 				case "generic-username":
 				case "generic-location":
 				case "phone-phonenumber":
-					return new KeyValuePair<string, bool>(PwDefs.UserNameField,
-						pdContext.MemoryProtection.ProtectUserName);
+					return PwDefs.UserNameField;
 				case "generic-code":
 				case "generic-password":
 				case "generic-pin":
-					return new KeyValuePair<string, bool>(PwDefs.PasswordField,
-						pdContext.MemoryProtection.ProtectPassword);
+					return PwDefs.PasswordField;
 				case "generic-hostname":
 				case "generic-url":
-					return new KeyValuePair<string, bool>(PwDefs.UrlField,
-						pdContext.MemoryProtection.ProtectUrl);
+					return PwDefs.UrlField;
 				case "creditcard-cardtype":
-					return new KeyValuePair<string, bool>("Card Type", false);
+					return "Card Type";
 				case "creditcard-expirydate":
-					return new KeyValuePair<string, bool>(KPRes.ExpiryTime, false);
+					return KPRes.ExpiryTime;
 				case "creditcard-ccv":
-					return new KeyValuePair<string, bool>("CCV Number", false);
+					return "CCV Number";
 				case "generic-certificate":
-					return new KeyValuePair<string, bool>("Certificate", false);
+					return "Certificate";
 				case "generic-keyfile":
-					return new KeyValuePair<string, bool>("Key File", false);
+					return "Key File";
 				case "generic-database":
-					return new KeyValuePair<string, bool>(KPRes.Database, false);
+					return KPRes.Database;
 				case "generic-email":
-					return new KeyValuePair<string, bool>(KPRes.EMail, false);
+					return KPRes.EMail;
 				case "generic-port":
-					return new KeyValuePair<string, bool>("Port", false);
+					return "Port";
 				case "generic-domain":
-					return new KeyValuePair<string, bool>("Domain", false);
+					return "Domain";
 				default: Debug.Assert(false); break;
 			}
 
-			return new KeyValuePair<string, bool>(strFieldName, false);
+			return strFieldName;
 		}
 
 		private static DateTime ImportTime(XmlNode xn)

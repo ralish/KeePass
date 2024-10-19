@@ -76,12 +76,12 @@ namespace KeePass.DataExchange.Formats
 		public override string DefaultExtension { get { return "xml"; } }
 		public override string ApplicationGroup { get { return KPRes.PasswordManagers; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
 			HspFolder hspRoot = XmlUtilEx.Deserialize<HspFolder>(sInput);
 
-			AddFolder(pwStorage.RootGroup, hspRoot, false);
+			AddFolder(pdStorage.RootGroup, hspRoot, false);
 		}
 
 		private static void AddFolder(PwGroup pgParent, HspFolder hspFolder,

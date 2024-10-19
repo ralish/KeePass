@@ -54,10 +54,10 @@ namespace KeePass.DataExchange.Formats
 			get { return KeePass.Properties.Resources.B16x16_KeePass; }
 		}
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			KdbxFile kdbx = new KdbxFile(pwStorage);
+			KdbxFile kdbx = new KdbxFile(pdStorage);
 			kdbx.Load(sInput, KdbxFormat.Default, slLogger);
 		}
 

@@ -73,17 +73,14 @@ namespace KeePass.App.Configuration
 				XmlDocument xdEnforced = (AppConfigSerializer.LoadEnforced(false) ??
 					AppConfigEx.CreateEmptyXmlDocument());
 
-				XmlDocument xdValues = XmlUtilEx.CreateXmlDocument();
+				XmlDocument xdValues;
 				using(MemoryStream msW = new MemoryStream())
 				{
 					AppConfigSerializer.SaveEx(cfgValues, msW);
 
 					using(MemoryStream msR = new MemoryStream(msW.ToArray(), false))
 					{
-						using(StreamReader sr = new StreamReader(msR, StrUtil.Utf8, true))
-						{
-							xdValues.LoadXml(sr.ReadToEnd());
-						}
+						xdValues = XmlUtilEx.LoadXmlDocument(msR, StrUtil.Utf8);
 					}
 				}
 

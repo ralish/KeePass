@@ -19,7 +19,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Text;
 
@@ -43,12 +42,10 @@ namespace KeePass.DataExchange.Formats
 
 		public override bool ImportAppendsToRootGroupOnly { get { return false; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			StreamReader sr = new StreamReader(sInput, StrUtil.Utf8, true);
-			string strData = sr.ReadToEnd();
-			sr.Close();
+			string strData = MemUtil.ReadString(sInput, StrUtil.Utf8);
 
 			// The Chrome extension of LastPass 4.1.35 encodes some
 			// special characters as XML entities; the web version and
@@ -61,7 +58,7 @@ namespace KeePass.DataExchange.Formats
 			opt.BackslashIsEscape = false;
 
 			CsvStreamReaderEx csr = new CsvStreamReaderEx(strData, opt);
-			ImportCsv(csr, pwStorage);
+			ImportCsv(csr, pdStorage);
 		}
 
 		private static void ImportCsv(CsvStreamReaderEx csr, PwDatabase pd)

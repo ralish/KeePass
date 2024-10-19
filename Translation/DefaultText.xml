@@ -10,6 +10,9 @@
 		<Data Name="Action">
 			<Value>Action</Value>
 		</Data>
+		<Data Name="ActionLower">
+			<Value>action</Value>
+		</Data>
 		<Data Name="ActivateDatabaseTab">
 			<Value>Activate database (select tab)</Value>
 		</Data>
@@ -1018,6 +1021,9 @@
 		<Data Name="File">
 			<Value>File</Value>
 		</Data>
+		<Data Name="FileArgsDetailsHint">
+			<Value>Click on 'Details' if you want to see the compiled file path/arguments (data is not hidden using asterisks).</Value>
+		</Data>
 		<Data Name="FileChanged">
 			<Value>The file on disk/server has changed since it was loaded. Probably someone else has edited and saved the database.</Value>
 		</Data>
@@ -1371,9 +1377,6 @@
 		</Data>
 		<Data Name="InvalidUrl">
 			<Value>The specified URL is invalid.</Value>
-		</Data>
-		<Data Name="InvalidUserPassword">
-			<Value>The specified user name / password combination is invalid.</Value>
 		</Data>
 		<Data Name="IOConnection">
 			<Value>I/O Connection</Value>
@@ -2032,6 +2035,9 @@
 		<Data Name="PickIcon">
 			<Value>Pick an icon.</Value>
 		</Data>
+		<Data Name="PlhSprConfirm">
+			<Value>Show confirmation dialog when evaluating/replacing a '{PARAM}' placeholder</Value>
+		</Data>
 		<Data Name="Plugin">
 			<Value>Plugin</Value>
 		</Data>
@@ -2296,6 +2302,9 @@
 		<Data Name="RootDirectory">
 			<Value>Root Directory</Value>
 		</Data>
+		<Data Name="RunOpenFileQ">
+			<Value>Are you sure you want to run/open the file?</Value>
+		</Data>
 		<Data Name="SameKeybLayout">
 			<Value>Ensure same keyboard layouts during auto-type</Value>
 		</Data>
@@ -2520,6 +2529,9 @@
 		</Data>
 		<Data Name="SpecialKeys">
 			<Value>Special Keys</Value>
+		</Data>
+		<Data Name="SprPlhQ">
+			<Value>Are you sure you want to evaluate/replace the placeholder?</Value>
 		</Data>
 		<Data Name="StandardExpireSelect">
 			<Value>Select one of the standard expiry times</Value>
@@ -2770,6 +2782,9 @@
 		<Data Name="UpToDate">
 			<Value>Up to date</Value>
 		</Data>
+		<Data Name="UriRunConfirm">
+			<Value>Show confirmation dialog when running/opening a '{PARAM}' URI</Value>
+		</Data>
 		<Data Name="Url">
 			<Value>URL</Value>
 		</Data>
@@ -2808,9 +2823,6 @@
 		</Data>
 		<Data Name="UserName">
 			<Value>User Name</Value>
-		</Data>
-		<Data Name="UserNamePrompt">
-			<Value>Enter the user name:</Value>
 		</Data>
 		<Data Name="UserNameStc">
 			<Value>User name</Value>
@@ -2874,12 +2886,6 @@
 		</Data>
 		<Data Name="WebBrowser">
 			<Value>Web Browser</Value>
-		</Data>
-		<Data Name="WebSiteLogin">
-			<Value>Web Site Login</Value>
-		</Data>
-		<Data Name="WebSites">
-			<Value>Web Sites</Value>
 		</Data>
 		<Data Name="WindowsFavorites">
 			<Value>Windows Favorites</Value>
@@ -3009,6 +3015,9 @@
 		</Data>
 		<Data Name="FinalKeyCreationFailed">
 			<Value>Failed to create the final encryption/decryption key!</Value>
+		</Data>
+		<Data Name="FollowRedirects">
+			<Value>Follow redirects</Value>
 		</Data>
 		<Data Name="FrameworkNotImplExcp">
 			<Value>The .NET Framework/runtime under which KeePass is currently running does not support this operation.</Value>

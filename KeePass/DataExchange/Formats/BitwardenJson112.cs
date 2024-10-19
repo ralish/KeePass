@@ -43,17 +43,14 @@ namespace KeePass.DataExchange.Formats
 		public override string DefaultExtension { get { return "json"; } }
 		public override string ApplicationGroup { get { return KPRes.PasswordManagers; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			using(StreamReader sr = new StreamReader(sInput, StrUtil.Utf8, true))
-			{
-				string str = sr.ReadToEnd();
-				if(string.IsNullOrEmpty(str)) return;
+			string str = MemUtil.ReadString(sInput, StrUtil.Utf8);
+			if(string.IsNullOrEmpty(str)) return;
 
-				CharStream cs = new CharStream(str);
-				ImportRoot(new JsonObject(cs), pwStorage);
-			}
+			CharStream cs = new CharStream(str);
+			ImportRoot(new JsonObject(cs), pdStorage);
 		}
 
 		private static void ImportRoot(JsonObject jo, PwDatabase pd)
@@ -182,8 +179,7 @@ namespace KeePass.DataExchange.Formats
 				if(joUri == null) { Debug.Assert(false); continue; }
 
 				string str = joUri.GetValue<string>("uri");
-				ImportUtil.CreateFieldWithIndex(pe.Strings, PwDefs.UrlField,
-					str, pd, false);
+				ImportUtil.Add(pe, PwDefs.UrlField, str, pd);
 			}
 		}
 

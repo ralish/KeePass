@@ -41,12 +41,10 @@ namespace KeePass.DataExchange.Formats
 		public override string DefaultExtension { get { return "csv"; } }
 		public override string ApplicationGroup { get { return KPRes.PasswordManagers; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			StreamReader sr = new StreamReader(sInput, StrUtil.Utf8, true);
-			string strData = sr.ReadToEnd();
-			sr.Close();
+			string strData = MemUtil.ReadString(sInput, StrUtil.Utf8);
 
 			CsvOptions opt = new CsvOptions();
 			opt.BackslashIsEscape = false;
@@ -135,7 +133,7 @@ namespace KeePass.DataExchange.Formats
 				if(v.Length == 0) continue;
 
 				PwEntry pe = new PwEntry(true, true);
-				PwGroup pg = pwStorage.RootGroup;
+				PwGroup pg = pdStorage.RootGroup;
 
 				for(int i = 0; i < v.Length; ++i)
 				{
@@ -158,7 +156,7 @@ namespace KeePass.DataExchange.Formats
 							pg = new PwGroup(true, true);
 							pg.Name = strValue;
 
-							pwStorage.RootGroup.AddGroup(pg, true);
+							pdStorage.RootGroup.AddGroup(pg, true);
 							dGroups[strValue] = pg;
 						}
 					}
@@ -172,9 +170,8 @@ namespace KeePass.DataExchange.Formats
 						else { Debug.Assert(false); }
 					}
 					else if(strName == strMapEMail)
-						ImportUtil.AppendToField(pe, PwDefs.UrlField,
-							"mailto:" + strValue, pwStorage);
-					else ImportUtil.AppendToField(pe, strName, strValue, pwStorage);
+						ImportUtil.Add(pe, PwDefs.UrlField, "mailto:" + strValue, pdStorage);
+					else ImportUtil.Add(pe, strName, strValue, pdStorage);
 				}
 
 				pg.AddEntry(pe, true);

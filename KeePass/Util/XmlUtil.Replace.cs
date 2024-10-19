@@ -191,28 +191,29 @@ namespace KeePass.Util
 				else { Debug.Assert(false); } // Unknown action
 			}
 
-			MemoryStream msMod = new MemoryStream();
-			using(XmlWriter xw = XmlUtilEx.CreateXmlWriter(msMod))
-			{
-				xd.Save(xw);
-			}
-			byte[] pbMod = msMod.ToArray();
-			msMod.Close();
-
 			PwDatabase pdMod = new PwDatabase();
-			msMod = new MemoryStream(pbMod, false);
 			try
 			{
-				KdbxFile kdbxMod = new KdbxFile(pdMod);
-				kdbxMod.Load(msMod, KdbxFormat.PlainXml, sl);
+				using(MemoryStream msW = new MemoryStream())
+				{
+					using(XmlWriter xw = XmlUtilEx.CreateXmlWriter(msW))
+					{
+						xd.Save(xw);
+					}
+
+					using(MemoryStream msR = new MemoryStream(msW.ToArray(), false))
+					{
+						KdbxFile kdbx = new KdbxFile(pdMod);
+						kdbx.Load(msR, KdbxFormat.PlainXml, sl);
+					}
+				}
 			}
-			catch(Exception)
+			catch(Exception ex)
 			{
-				throw new Exception(KPRes.XmlModInvalid + MessageService.NewParagraph +
-					KPRes.OpAborted + MessageService.NewParagraph +
-					KPRes.DbNoModBy.Replace(@"{PARAM}", @"'" + KPRes.XmlReplace + @"'"));
+				throw new ExtendedException(KPRes.XmlModInvalid, ex,
+					KPRes.OpAborted + " " + KPRes.DbNoModBy.Replace("{PARAM}",
+					"'" + KPRes.XmlReplace + "'"));
 			}
-			finally { msMod.Close(); }
 
 			PrepareModDbForMerge(pdMod, pd);
 

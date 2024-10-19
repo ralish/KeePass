@@ -20,7 +20,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Text;
 
@@ -46,12 +45,10 @@ namespace KeePass.DataExchange.Formats
 
 		public override bool ImportAppendsToRootGroupOnly { get { return false; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			StreamReader sr = new StreamReader(sInput, Encoding.Default, true);
-			string strData = sr.ReadToEnd();
-			sr.Close();
+			string strData = MemUtil.ReadString(sInput, Encoding.Default);
 
 			string[] vLines = strData.Split(new char[] { '\r', '\n' },
 				StringSplitOptions.RemoveEmptyEntries);
@@ -59,11 +56,11 @@ namespace KeePass.DataExchange.Formats
 			Dictionary<string, PwGroup> dictGroups = new Dictionary<string, PwGroup>();
 			foreach(string strLine in vLines)
 			{
-				ProcessCsvLine(strLine, pwStorage, dictGroups);
+				ProcessCsvLine(strLine, pdStorage, dictGroups);
 			}
 		}
 
-		private static void ProcessCsvLine(string strLine, PwDatabase pwStorage,
+		private static void ProcessCsvLine(string strLine, PwDatabase pd,
 			Dictionary<string, PwGroup> dictGroups)
 		{
 			if(strLine == "\"Bezeichnung\"\t\"User/ID\"\t\"1.Passwort\"\t\"Url/Programm\"\t\"Geändert am\"\t\"Bemerkung\"\t\"2.Passwort\"\t\"Läuft ab\"\t\"Kategorie\"\t\"Eigene Felder\"")
@@ -88,31 +85,20 @@ namespace KeePass.DataExchange.Formats
 			else
 			{
 				pg = new PwGroup(true, true, strGroup, PwIcon.Folder);
-				pwStorage.RootGroup.AddGroup(pg, true);
+				pd.RootGroup.AddGroup(pg, true);
 				dictGroups[strGroup] = pg;
 			}
 
 			PwEntry pe = new PwEntry(true, true);
 			pg.AddEntry(pe, true);
 
-			pe.Strings.Set(PwDefs.TitleField, new ProtectedString(
-				pwStorage.MemoryProtection.ProtectTitle,
-				ParseCsvWord(list[1 + iOffset])));
-			pe.Strings.Set(PwDefs.UserNameField, new ProtectedString(
-				pwStorage.MemoryProtection.ProtectUserName,
-				ParseCsvWord(list[2 + iOffset])));
-			pe.Strings.Set(PwDefs.PasswordField, new ProtectedString(
-				pwStorage.MemoryProtection.ProtectPassword,
-				ParseCsvWord(list[3 + iOffset])));
-			pe.Strings.Set(PwDefs.UrlField, new ProtectedString(
-				pwStorage.MemoryProtection.ProtectUrl,
-				ParseCsvWord(list[4 + iOffset])));
-			pe.Strings.Set(PwDefs.NotesField, new ProtectedString(
-				pwStorage.MemoryProtection.ProtectNotes,
-				ParseCsvWord(list[6 + iOffset])));
+			ImportUtil.Add(pe, PwDefs.TitleField, ParseCsvWord(list[1 + iOffset]), pd);
+			ImportUtil.Add(pe, PwDefs.UserNameField, ParseCsvWord(list[2 + iOffset]), pd);
+			ImportUtil.Add(pe, PwDefs.PasswordField, ParseCsvWord(list[3 + iOffset]), pd);
+			ImportUtil.Add(pe, PwDefs.UrlField, ParseCsvWord(list[4 + iOffset]), pd);
+			ImportUtil.Add(pe, PwDefs.NotesField, ParseCsvWord(list[6 + iOffset]), pd);
 			pe.Strings.Set(PwDefs.PasswordField + " 2", new ProtectedString(
-				pwStorage.MemoryProtection.ProtectPassword,
-				ParseCsvWord(list[7 + iOffset])));
+				pd.MemoryProtection.ProtectPassword, ParseCsvWord(list[7 + iOffset])));
 
 			// 1Password Pro only:
 			// Debug.Assert(list[9] == list[0]); // Very mysterious format...

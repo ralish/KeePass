@@ -69,7 +69,7 @@ namespace KeePass.DataExchange.Formats
 		public override string DefaultExtension { get { return "npw"; } }
 		public override string ApplicationGroup { get { return KPRes.PasswordManagers; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
 			if(g_dAutoTypeConv == null)
@@ -95,31 +95,22 @@ namespace KeePass.DataExchange.Formats
 			string strData = Encoding.Default.GetString(pbData);
 			strData = strData.Replace(@"&", @"&amp;");
 
-			byte[] pbDataUtf8 = StrUtil.Utf8.GetBytes(strData);
-
-			XmlDocument xmlDoc = XmlUtilEx.CreateXmlDocument();
-			using(MemoryStream ms = new MemoryStream(pbDataUtf8, false))
-			{
-				using(StreamReader sr = new StreamReader(ms, StrUtil.Utf8))
-				{
-					xmlDoc.Load(sr);
-				}
-			}
+			XmlDocument xmlDoc = XmlUtilEx.LoadXmlDocumentFromString(strData);
 
 			XmlNode xmlRoot = xmlDoc.DocumentElement;
 
 			foreach(XmlNode xmlChild in xmlRoot.ChildNodes)
 			{
 				if(xmlChild.Name == ElemGroup)
-					ReadGroup(xmlChild, pwStorage.RootGroup, pwStorage);
+					ReadGroup(xmlChild, pdStorage.RootGroup, pdStorage);
 				else if(xmlChild.Name == ElemEntry)
-					ReadEntry(xmlChild, pwStorage.RootGroup, pwStorage);
+					ReadEntry(xmlChild, pdStorage.RootGroup, pdStorage);
 				else if(xmlChild.Name == ElemUnsupp0) { }
 				else { Debug.Assert(false); }
 			}
 		}
 
-		private static void ReadGroup(XmlNode xmlNode, PwGroup pgParent, PwDatabase pwStorage)
+		private static void ReadGroup(XmlNode xmlNode, PwGroup pgParent, PwDatabase pd)
 		{
 			PwGroup pg = new PwGroup(true, true);
 			pgParent.AddGroup(pg, true);
@@ -136,16 +127,16 @@ namespace KeePass.DataExchange.Formats
 					}
 				}
 				else if(xmlChild.Name == ElemGroup)
-					ReadGroup(xmlChild, pg, pwStorage);
+					ReadGroup(xmlChild, pg, pd);
 				else if(xmlChild.Name == ElemEntry)
-					ReadEntry(xmlChild, pg, pwStorage);
+					ReadEntry(xmlChild, pg, pd);
 				else if(xmlChild.Name == ElemTags)
 					AddTags(pg.Tags, XmlUtil.SafeInnerText(xmlChild));
 				else { Debug.Assert(false); }
 			}
 		}
 
-		private static void ReadEntry(XmlNode xmlNode, PwGroup pgParent, PwDatabase pwStorage)
+		private static void ReadEntry(XmlNode xmlNode, PwGroup pgParent, PwDatabase pd)
 		{
 			PwEntry pe = new PwEntry(true, true);
 			pgParent.AddEntry(pe, true);
@@ -158,25 +149,21 @@ namespace KeePass.DataExchange.Formats
 
 				if(xmlChild.NodeType == XmlNodeType.Text)
 					ImportUtil.AppendToField(pe, PwDefs.TitleField, (xmlChild.Value ??
-						string.Empty).Trim(), pwStorage, " ", false);
+						string.Empty).Trim(), pd, " ", false);
 				else if(xmlChild.Name == ElemEntryUser)
-					pe.Strings.Set(PwDefs.UserNameField, new ProtectedString(
-						pwStorage.MemoryProtection.ProtectUserName, strValue));
+					ImportUtil.Add(pe, PwDefs.UserNameField, strValue, pd);
 				else if(xmlChild.Name == ElemEntryPassword)
-					pe.Strings.Set(PwDefs.PasswordField, new ProtectedString(
-						pwStorage.MemoryProtection.ProtectPassword, strValue));
+					ImportUtil.Add(pe, PwDefs.PasswordField, strValue, pd);
 				else if(xmlChild.Name == ElemEntryPassword2)
 				{
 					if(strValue.Length > 0) // Prevent empty item
 						pe.Strings.Set(Password2Key, new ProtectedString(
-							pwStorage.MemoryProtection.ProtectPassword, strValue));
+							pd.MemoryProtection.ProtectPassword, strValue));
 				}
 				else if(xmlChild.Name == ElemEntryUrl)
-					pe.Strings.Set(PwDefs.UrlField, new ProtectedString(
-						pwStorage.MemoryProtection.ProtectUrl, strValue));
+					ImportUtil.Add(pe, PwDefs.UrlField, strValue, pd);
 				else if(xmlChild.Name == ElemEntryNotes)
-					pe.Strings.Set(PwDefs.NotesField, new ProtectedString(
-						pwStorage.MemoryProtection.ProtectNotes, strValue));
+					ImportUtil.Add(pe, PwDefs.NotesField, strValue, pd);
 				else if(xmlChild.Name == ElemTags)
 					AddTags(pe.Tags, strValue);
 				else if(xmlChild.Name == ElemEntryExpires)

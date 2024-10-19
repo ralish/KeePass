@@ -41,48 +41,39 @@ namespace KeePass.Util
 		{
 			try
 			{
-				RegistryKey kClassesRoot = Registry.ClassesRoot;
+				const RegistryValueKind rvkS = RegistryValueKind.String;
+				RegistryKey rkCR = Registry.ClassesRoot;
 
-				try { kClassesRoot.CreateSubKey("." + strFileExt); }
-				catch(Exception) { }
-				RegistryKey kFileExt = kClassesRoot.OpenSubKey("." + strFileExt, true);
-				kFileExt.SetValue(string.Empty, strExtId, RegistryValueKind.String);
-				kFileExt.Close();
+				using(RegistryKey rk = rkCR.CreateSubKey("." + strFileExt))
+				{
+					rk.SetValue(string.Empty, strExtId, rvkS);
+				}
 
-				try { kClassesRoot.CreateSubKey(strExtId); }
-				catch(Exception) { }
-				RegistryKey kExtInfo = kClassesRoot.OpenSubKey(strExtId, true);
+				using(RegistryKey rkType = rkCR.CreateSubKey(strExtId))
+				{
+					rkType.SetValue(string.Empty, strFullExtName, rvkS);
 
-				kExtInfo.SetValue(string.Empty, strFullExtName, RegistryValueKind.String);
+					using(RegistryKey rk = rkType.CreateSubKey("DefaultIcon"))
+					{
+						if(strAppPath.IndexOfAny(new char[] { ' ', '\t' }) < 0)
+							rk.SetValue(string.Empty, strAppPath + ",0", rvkS);
+						else
+							rk.SetValue(string.Empty, "\"" + strAppPath + "\",0", rvkS);
+					}
 
-				try { kExtInfo.CreateSubKey("DefaultIcon"); }
-				catch(Exception) { }
-				RegistryKey kIcon = kExtInfo.OpenSubKey("DefaultIcon", true);
-				if(strAppPath.IndexOfAny(new char[] { ' ', '\t' }) < 0)
-					kIcon.SetValue(string.Empty, strAppPath + ",0", RegistryValueKind.String);
-				else
-					kIcon.SetValue(string.Empty, "\"" + strAppPath + "\",0", RegistryValueKind.String);
-				kIcon.Close();
+					using(RegistryKey rkS = rkType.CreateSubKey("shell"))
+					{
+						using(RegistryKey rkSO = rkS.CreateSubKey("open"))
+						{
+							rkSO.SetValue(string.Empty, "&Open with " + strAppName, rvkS);
 
-				try { kExtInfo.CreateSubKey("shell"); }
-				catch(Exception) { }
-				RegistryKey kShell = kExtInfo.OpenSubKey("shell", true);
-
-				try { kShell.CreateSubKey("open"); }
-				catch(Exception) { }
-				RegistryKey kShellOpen = kShell.OpenSubKey("open", true);
-
-				kShellOpen.SetValue(string.Empty, @"&Open with " + strAppName, RegistryValueKind.String);
-
-				try { kShellOpen.CreateSubKey("command"); }
-				catch(Exception) { }
-				RegistryKey kShellCommand = kShellOpen.OpenSubKey("command", true);
-				kShellCommand.SetValue(string.Empty, "\"" + strAppPath + "\" \"%1\"", RegistryValueKind.String);
-				kShellCommand.Close();
-
-				kShellOpen.Close();
-				kShell.Close();
-				kExtInfo.Close();
+							using(RegistryKey rk = rkSO.CreateSubKey("command"))
+							{
+								rk.SetValue(string.Empty, "\"" + strAppPath + "\" \"%1\"", rvkS);
+							}
+						}
+					}
+				}
 
 				ShChangeNotify();
 
@@ -99,14 +90,13 @@ namespace KeePass.Util
 		{
 			try
 			{
-				RegistryKey kClassesRoot = Registry.ClassesRoot;
-
-				kClassesRoot.DeleteSubKeyTree("." + strFileExt);
-				kClassesRoot.DeleteSubKeyTree(strExtId);
+				RegistryKey rkCR = Registry.ClassesRoot;
+				rkCR.DeleteSubKeyTree("." + strFileExt);
+				rkCR.DeleteSubKeyTree(strExtId);
 
 				ShChangeNotify();
 			}
-			catch(Exception) { }
+			catch(Exception) { Debug.Assert(false); }
 		}
 
 		private static void ShChangeNotify()
@@ -123,7 +113,7 @@ namespace KeePass.Util
 		public static void SetStartWithWindows(string strAppName, string strAppPath,
 			bool bAutoStart)
 		{
-			string strKey = "HKEY_CURRENT_USER\\" + AutoRunKey;
+			const string strKey = "HKEY_CURRENT_USER\\" + AutoRunKey;
 
 			try
 			{
@@ -132,10 +122,10 @@ namespace KeePass.Util
 						RegistryValueKind.String);
 				else
 				{
-					using(RegistryKey kRun = Registry.CurrentUser.OpenSubKey(
+					using(RegistryKey rk = Registry.CurrentUser.OpenSubKey(
 						AutoRunKey, true))
 					{
-						kRun.DeleteValue(strAppName);
+						rk.DeleteValue(strAppName);
 					}
 				}
 			}
@@ -144,17 +134,8 @@ namespace KeePass.Util
 
 		public static bool GetStartWithWindows(string strAppName)
 		{
-			try
-			{
-				string strNotFound = Guid.NewGuid().ToString();
-				string str = (Registry.GetValue("HKEY_CURRENT_USER\\" +
-					AutoRunKey, strAppName, strNotFound) as string);
-
-				return (!string.IsNullOrEmpty(str) && (str != strNotFound));
-			}
-			catch(Exception) { Debug.Assert(false); }
-
-			return false;
+			return !string.IsNullOrEmpty(RegUtil.GetValue<string>(
+				"HKEY_CURRENT_USER\\" + AutoRunKey, strAppName));
 		}
 
 		/* private const string PreLoadKey = "Software\\Microsoft\\Windows\\CurrentVersion\\Run";
@@ -174,9 +155,11 @@ namespace KeePass.Util
 				}
 				else
 				{
-					RegistryKey kRun = Registry.LocalMachine.OpenSubKey(PreLoadKey, true);
-					kRun.DeleteValue(strAppName);
-					kRun.Close();
+					using(RegistryKey rk = Registry.LocalMachine.OpenSubKey(
+						PreLoadKey, true))
+					{
+						rk.DeleteValue(strAppName);
+					}
 				}
 			}
 			catch(Exception) { Debug.Assert(false); }

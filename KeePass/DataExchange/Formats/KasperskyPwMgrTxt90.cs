@@ -41,14 +41,10 @@ namespace KeePass.DataExchange.Formats
 		public override string DefaultExtension { get { return "txt"; } }
 		public override string ApplicationGroup { get { return KPRes.PasswordManagers; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			string strAll;
-			using(StreamReader sr = new StreamReader(sInput, Encoding.UTF8, true))
-			{
-				strAll = sr.ReadToEnd();
-			}
+			string strAll = MemUtil.ReadString(sInput, Encoding.UTF8);
 
 			// Fix new-line sequences and normalize to '\n'
 			strAll = strAll.Replace("\r\r\n", "\r\n");
@@ -56,10 +52,10 @@ namespace KeePass.DataExchange.Formats
 
 			string[] vBlocks = strAll.Split(new string[] { "\n\n---\n\n" },
 				StringSplitOptions.None);
-			PwGroup pg = pwStorage.RootGroup;
+			PwGroup pg = pdStorage.RootGroup;
 
 			foreach(string strBlock in vBlocks)
-				ImportBlock(pwStorage, ref pg, strBlock);
+				ImportBlock(pdStorage, ref pg, strBlock);
 		}
 
 		private static void ImportBlock(PwDatabase pd, ref PwGroup pg, string strBlock)

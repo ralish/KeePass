@@ -49,17 +49,15 @@ namespace KeePass.DataExchange.Formats
 		private const string StrNotesBegin = "Note:";
 		private const string StrFieldSplit = ": ";
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			StreamReader sr = new StreamReader(sInput, Encoding.Default);
-			string strData = sr.ReadToEnd();
-			sr.Close();
+			string strData = MemUtil.ReadString(sInput, Encoding.Default);
 
 			strData = strData.Replace("\r", string.Empty);
 			string[] vLines = strData.Split(new char[] { '\n' });
 
-			PwGroup pg = pwStorage.RootGroup;
+			PwGroup pg = pdStorage.RootGroup;
 			Dictionary<string, string> dItems = new Dictionary<string, string>();
 			bool bInNotes = false;
 
@@ -74,7 +72,7 @@ namespace KeePass.DataExchange.Formats
 					pg.Name = strLine.Substring(StrGroupStart.Length, strLine.Length -
 						StrGroupStart.Length - StrGroupEnd.Length);
 
-					pwStorage.RootGroup.AddGroup(pg, true);
+					pdStorage.RootGroup.AddGroup(pg, true);
 				}
 				else if(strLine.StartsWith(StrEntryStart) && strLine.EndsWith(StrEntryEnd))
 				{

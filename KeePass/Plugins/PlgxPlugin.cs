@@ -107,27 +107,19 @@ namespace KeePass.Plugins
 
 		public static void CreateInfoFile(string strPlgxPath)
 		{
-			FileStream fsOut = null;
-			TextWriter twLog = null;
-
 			try
 			{
-				fsOut = new FileStream(strPlgxPath + ".txt", FileMode.Create,
-					FileAccess.Write, FileShare.None);
-				twLog = new StreamWriter(fsOut, new UTF8Encoding(false));
-
-				NullStatusLogger sl = new NullStatusLogger();
-				LoadPriv(strPlgxPath, sl, false, false, false, twLog);
+				using(FileStream fs = new FileStream(strPlgxPath + ".txt",
+					FileMode.Create, FileAccess.Write, FileShare.None))
+				{
+					using(StreamWriter sw = new StreamWriter(fs, StrUtil.Utf8))
+					{
+						NullStatusLogger sl = new NullStatusLogger();
+						LoadPriv(strPlgxPath, sl, false, false, false, sw);
+					}
+				}
 			}
-			catch(Exception ex)
-			{
-				MessageService.ShowWarning(strPlgxPath, ex);
-			}
-			finally
-			{
-				if(twLog != null) twLog.Close();
-				if(fsOut != null) fsOut.Close();
-			}
+			catch(Exception ex) { MessageService.ShowWarning(strPlgxPath, ex); }
 		}
 
 		private static void LoadPriv(string strFilePath, IStatusLogger slStatus,
@@ -138,19 +130,17 @@ namespace KeePass.Plugins
 			FileInfo fi = new FileInfo(strFilePath);
 			if(fi.Length < 12) return; // Ignore file, don't throw
 
-			FileStream fs = new FileStream(strFilePath, FileMode.Open,
-				FileAccess.Read, FileShare.Read);
-			BinaryReader br = new BinaryReader(fs);
-
 			PlgxPluginInfo plgx = new PlgxPluginInfo(true, bAllowCached, bAllowCompile);
 			plgx.LogStream = twLog;
 
-			string strPluginPath = null;
-			try { strPluginPath = ReadFile(br, plgx, slStatus); }
-			finally
+			string strPluginPath;
+			using(FileStream fs = new FileStream(strFilePath, FileMode.Open,
+				FileAccess.Read, FileShare.Read))
 			{
-				br.Close();
-				fs.Close();
+				using(BinaryReader br = new BinaryReader(fs))
+				{
+					strPluginPath = ReadFile(br, plgx, slStatus);
+				}
 			}
 
 			if(!string.IsNullOrEmpty(strPluginPath) && bAllowLoad)
@@ -295,25 +285,24 @@ namespace KeePass.Plugins
 		private static void ExtractFile(byte[] pbData, string strTmpRoot,
 			PlgxPluginInfo plgx)
 		{
-			MemoryStream ms = new MemoryStream(pbData, false);
-			BinaryReader br = new BinaryReader(ms);
-
 			string strPath = null;
 			byte[] pbContent = null;
-
-			while(true)
+			using(MemoryStream ms = new MemoryStream(pbData, false))
 			{
-				KeyValuePair<ushort, byte[]> kvp = ReadObject(br);
+				using(BinaryReader br = new BinaryReader(ms))
+				{
+					while(true)
+					{
+						KeyValuePair<ushort, byte[]> kvp = ReadObject(br);
 
-				if(kvp.Key == PlgxfEOF) break;
-				else if(kvp.Key == PlgxfPath)
-					strPath = StrUtil.Utf8.GetString(kvp.Value);
-				else if(kvp.Key == PlgxfData) pbContent = kvp.Value;
-				else { Debug.Assert(false); }
+						if(kvp.Key == PlgxfEOF) break;
+						else if(kvp.Key == PlgxfPath)
+							strPath = StrUtil.Utf8.GetString(kvp.Value);
+						else if(kvp.Key == PlgxfData) pbContent = kvp.Value;
+						else { Debug.Assert(false); }
+					}
+				}
 			}
-
-			br.Close();
-			ms.Close();
 
 			if(!string.IsNullOrEmpty(strPath) && (pbContent != null))
 			{
@@ -350,9 +339,20 @@ namespace KeePass.Plugins
 		{
 			if(strSourceFile.EndsWith(".suo", StrUtil.CaseIgnoreCmp)) return;
 
-			MemoryStream msFile = new MemoryStream();
-			BinaryWriter bwFile = new BinaryWriter(msFile);
+			using(MemoryStream msFile = new MemoryStream())
+			{
+				using(BinaryWriter bwFile = new BinaryWriter(msFile))
+				{
+					WriteFileObject(bwFile, strRootDir, strSourceFile);
 
+					WriteObject(bw, PlgxFile, msFile.ToArray());
+				}
+			}
+		}
+
+		private static void WriteFileObject(BinaryWriter bwFile, string strRootDir,
+			string strSourceFile)
+		{
 			strRootDir = UrlUtil.EnsureTerminatingSeparator(strRootDir, false);
 			string strRel = UrlUtil.ConvertSeparators(UrlUtil.MakeRelativePath(
 				strRootDir + "Sentinel.txt", strSourceFile), '/');
@@ -363,16 +363,11 @@ namespace KeePass.Plugins
 				throw new OutOfMemoryException();
 
 			byte[] pbCompressed = MemUtil.Compress(pbData);
+			if(!MemUtil.ArraysEqual(MemUtil.Decompress(pbCompressed), pbData))
+				throw new InvalidOperationException();
 			WriteObject(bwFile, PlgxfData, pbCompressed);
 
 			WriteObject(bwFile, PlgxfEOF, null);
-
-			WriteObject(bw, PlgxFile, msFile.ToArray());
-			bwFile.Close();
-			msFile.Close();
-
-			if(!MemUtil.ArraysEqual(MemUtil.Decompress(pbCompressed), pbData))
-				throw new InvalidOperationException();
 		}
 
 		public static void CreateFromCommandLine()
@@ -382,10 +377,12 @@ namespace KeePass.Plugins
 				string strDir = Program.CommandLineArgs.FileName;
 				if(string.IsNullOrEmpty(strDir))
 				{
-					FolderBrowserDialog dlg = UIUtil.CreateFolderBrowserDialog(KPRes.Plugin);
-					if(dlg.ShowDialog() != DialogResult.OK) { dlg.Dispose(); return; }
-					strDir = dlg.SelectedPath;
-					dlg.Dispose();
+					using(FolderBrowserDialog dlg = UIUtil.CreateFolderBrowserDialog(
+						KPRes.Plugin))
+					{
+						if(dlg.ShowDialog() != DialogResult.OK) return;
+						strDir = dlg.SelectedPath;
+					}
 				}
 
 				CreateFromDirectory(strDir);
@@ -400,10 +397,22 @@ namespace KeePass.Plugins
 			PlgxPluginInfo plgx = new PlgxPluginInfo(false, true, true);
 			PlgxCsprojLoader.LoadDefault(strDirPath, plgx);
 
-			FileStream fs = new FileStream(strPlgx, FileMode.Create,
-				FileAccess.Write, FileShare.None);
-			BinaryWriter bw = new BinaryWriter(fs);
+			using(FileStream fs = new FileStream(strPlgx, FileMode.Create,
+				FileAccess.Write, FileShare.None))
+			{
+				using(BinaryWriter bw = new BinaryWriter(fs))
+				{
+					CreateFromDirectory(strDirPath, plgx, bw);
+				}
+			}
 
+			// Test loading not possible, because MainForm not available
+			// PlgxPlugin.Load(strPlgx);
+		}
+
+		private static void CreateFromDirectory(string strDirPath,
+			PlgxPluginInfo plgx, BinaryWriter bw)
+		{
 			bw.Write(PlgxSignature1);
 			bw.Write(PlgxSignature2);
 			bw.Write(PlgxVersion);
@@ -457,12 +466,6 @@ namespace KeePass.Plugins
 
 			WriteObject(bw, PlgxEndContent, null);
 			WriteObject(bw, PlgxEOF, null);
-
-			bw.Close();
-			fs.Close();
-
-			// Test loading not possible, because MainForm not available
-			// PlgxPlugin.Load(strPlgx);
 		}
 
 		private static void RecursiveFileAdd(BinaryWriter bw, string strRootDir,
@@ -663,7 +666,7 @@ namespace KeePass.Plugins
 			}
 
 			sb.AppendLine(new string('=', 78));
-			sb.AppendLine(@"Compiler '" + (strCompiler ?? "null") + @"':");
+			sb.AppendLine("Compiler '" + (strCompiler ?? "null") + "':");
 			sb.AppendLine();
 
 			foreach(string str in cr.Output)
@@ -742,17 +745,18 @@ namespace KeePass.Plugins
 					PrepareResXFile(strResSrc);
 
 					string strRsrc = UrlUtil.StripExtension(strResFile) + ".resources";
-					ResXResourceReader r = new ResXResourceReader(strResSrc);
-					ResourceWriter w = new ResourceWriter(strRsrc);
+					using(ResXResourceReader r = new ResXResourceReader(strResSrc))
+					{
+						r.BasePath = UrlUtil.GetFileDirectory(strResSrc, false, true);
 
-					r.BasePath = UrlUtil.GetFileDirectory(strResSrc, false, true);
+						using(ResourceWriter w = new ResourceWriter(strRsrc))
+						{
+							foreach(DictionaryEntry de in r)
+								w.AddResource((string)de.Key, de.Value);
 
-					foreach(DictionaryEntry de in r)
-						w.AddResource((string)de.Key, de.Value);
-
-					w.Generate();
-					w.Close();
-					r.Close();
+							w.Generate();
+						}
+					}
 
 					if(File.Exists(strRsrc))
 					{
@@ -778,9 +782,9 @@ namespace KeePass.Plugins
 			// Mono's ResXResourceReader doesn't convert them
 			for(int i = 0; i < (v.Length - 1); ++i)
 			{
-				if((v[i].IndexOf(@"<data") >= 0) && (v[i].IndexOf(
-					@"System.Resources.ResXFileRef") >= 0) && (v[i + 1].IndexOf(
-					@"<value>") >= 0))
+				if((v[i].IndexOf("<data") >= 0) && (v[i].IndexOf(
+					"System.Resources.ResXFileRef") >= 0) && (v[i + 1].IndexOf(
+					"<value>") >= 0))
 				{
 					v[i + 1] = UrlUtil.ConvertSeparators(v[i + 1]);
 				}
@@ -814,10 +818,10 @@ namespace KeePass.Plugins
 
 			string str = strCmd;
 			if(strTmpDir != null)
-				str = StrUtil.ReplaceCaseInsensitive(str, @"{PLGX_TEMP_DIR}",
+				str = StrUtil.ReplaceCaseInsensitive(str, "{PLGX_TEMP_DIR}",
 					SprEncoding.EncodeForCommandLine(strTmpDir));
 			if(strCacheDir != null)
-				str = StrUtil.ReplaceCaseInsensitive(str, @"{PLGX_CACHE_DIR}",
+				str = StrUtil.ReplaceCaseInsensitive(str, "{PLGX_CACHE_DIR}",
 					SprEncoding.EncodeForCommandLine(strCacheDir));
 
 			// str = UrlUtil.ConvertSeparators(str); // Would convert args

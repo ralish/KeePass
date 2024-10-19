@@ -169,9 +169,10 @@ namespace KeePass.DataExchange
 
 				if(bFileReq) bExistedAlready = IOConnection.FileExists(iocOutput);
 
-				Stream s = (bFileReq ? IOConnection.OpenWrite(iocOutput) : null);
-				try { bResult = fileFormat.Export(pwExportInfo, s, slLogger); }
-				finally { if(s != null) s.Close(); }
+				using(Stream s = (bFileReq ? IOConnection.OpenWrite(iocOutput) : null))
+				{
+					bResult = fileFormat.Export(pwExportInfo, s, slLogger);
+				}
 
 				if(bFileReq && bResult)
 				{

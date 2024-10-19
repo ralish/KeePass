@@ -29,8 +29,6 @@ using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 
-using Microsoft.Win32;
-
 using KeePass.App;
 using KeePass.App.Configuration;
 using KeePass.Native;
@@ -2858,16 +2856,15 @@ namespace KeePass.UI
 		{
 			if(ico == null) { Debug.Assert(false); return null; }
 
-			MemoryStream ms = new MemoryStream();
 			try
 			{
-				ico.Save(ms);
-				byte[] pb = ms.ToArray();
-
-				return GfxUtil.LoadImage(pb); // Extracts best image from ICO
+				using(MemoryStream ms = new MemoryStream())
+				{
+					ico.Save(ms);
+					return GfxUtil.LoadImage(ms.ToArray()); // Extracts best image
+				}
 			}
 			catch { Debug.Assert(false); }
-			finally { ms.Close(); }
 
 			return null;
 		}
@@ -3094,13 +3091,11 @@ namespace KeePass.UI
 
 			try
 			{
-				string strRoot = "HKEY_CURRENT_USER\\AppEvents\\Schemes\\Apps\\.Default\\WindowsUAC\\";
+				const string strRoot = "HKEY_CURRENT_USER\\AppEvents\\Schemes\\Apps\\.Default\\WindowsUAC\\";
 
-				string strWav = (Registry.GetValue(strRoot + ".Current",
-					string.Empty, string.Empty) as string);
+				string strWav = RegUtil.GetValue<string>(strRoot + ".Current", string.Empty);
 				if(string.IsNullOrEmpty(strWav))
-					strWav = (Registry.GetValue(strRoot + ".Default",
-						string.Empty, string.Empty) as string);
+					strWav = RegUtil.GetValue<string>(strRoot + ".Default", string.Empty);
 				if(string.IsNullOrEmpty(strWav))
 					strWav = "%SystemRoot%\\Media\\Windows User Account Control.wav";
 

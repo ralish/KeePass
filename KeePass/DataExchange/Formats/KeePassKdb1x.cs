@@ -77,20 +77,23 @@ namespace KeePass.DataExchange.Formats
 			return TryBeginImport();
 		}
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
 			string strTempFile = Program.TempFilesPool.GetTempFileName();
 
-			BinaryReader br = new BinaryReader(sInput);
-			byte[] pb = br.ReadBytes((int)sInput.Length);
-			br.Close();
-			File.WriteAllBytes(strTempFile, pb);
+			try
+			{
+				using(FileStream fs = new FileStream(strTempFile, FileMode.Create,
+					FileAccess.Write, FileShare.None))
+				{
+					MemUtil.CopyStream(sInput, fs);
+				}
 
-			KdbFile kdb = new KdbFile(pwStorage, slLogger);
-			kdb.Load(strTempFile);
-
-			Program.TempFilesPool.Delete(strTempFile);
+				KdbFile kdb = new KdbFile(pdStorage, slLogger);
+				kdb.Load(strTempFile);
+			}
+			finally { Program.TempFilesPool.Delete(strTempFile); }
 		}
 
 		public override bool Export(PwExportInfo pwExportInfo, Stream sOutput,

@@ -42,23 +42,19 @@ namespace KeePass.DataExchange.Formats
 		public override string DefaultExtension { get { return "json"; } }
 		public override string ApplicationGroup { get { return KPRes.Browser; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			JsonObject jo;
-			using(StreamReader sr = new StreamReader(sInput, StrUtil.Utf8, true))
-			{
-				string strJson = sr.ReadToEnd();
-				if(string.IsNullOrEmpty(strJson)) return;
+			string strJson = MemUtil.ReadString(sInput, StrUtil.Utf8);
+			if(string.IsNullOrEmpty(strJson)) return;
 
-				jo = new JsonObject(new CharStream(strJson));
-			}
+			JsonObject jo = new JsonObject(new CharStream(strJson));
 
 			Dictionary<string, List<string>> dTags =
 				new Dictionary<string, List<string>>();
 			List<PwEntry> lCreatedEntries = new List<PwEntry>();
 
-			AddObject(pwStorage.RootGroup, jo, pwStorage, false, dTags,
+			AddObject(pdStorage.RootGroup, jo, pdStorage, false, dTags,
 				lCreatedEntries);
 
 			// Tags support (old versions)
@@ -78,9 +74,9 @@ namespace KeePass.DataExchange.Formats
 			}
 		}
 
-		private static void AddObject(PwGroup pgStorage, JsonObject jo,
-			PwDatabase pwContext, bool bCreateSubGroups,
-			Dictionary<string, List<string>> dTags, List<PwEntry> lCreatedEntries)
+		private static void AddObject(PwGroup pgStorage, JsonObject jo, PwDatabase pd,
+			bool bCreateSubGroups, Dictionary<string, List<string>> dTags,
+			List<PwEntry> lCreatedEntries)
 		{
 			string strRoot = jo.GetValue<string>("root");
 			if(string.Equals(strRoot, "tagsFolder", StrUtil.CaseIgnoreCmp))
@@ -106,7 +102,7 @@ namespace KeePass.DataExchange.Formats
 				{
 					if(joSub == null) { Debug.Assert(false); continue; }
 
-					AddObject(pgNew, joSub, pwContext, true, dTags, lCreatedEntries);
+					AddObject(pgNew, joSub, pd, true, dTags, lCreatedEntries);
 				}
 
 				return;
@@ -114,13 +110,11 @@ namespace KeePass.DataExchange.Formats
 
 			PwEntry pe = new PwEntry(true, true);
 
-			// SetString(pe, "Index", false, jo, "index");
-			SetString(pe, PwDefs.TitleField, pwContext.MemoryProtection.ProtectTitle,
-				jo, "title");
-			// SetString(pe, "ID", false, jo, "id");
-			SetString(pe, PwDefs.UrlField, pwContext.MemoryProtection.ProtectUrl,
-				jo, "uri");
-			// SetString(pe, "CharSet", false, jo, "charset");
+			// SetString(pe, "Index", jo, "index", pd);
+			SetString(pe, PwDefs.TitleField, jo, "title", pd);
+			// SetString(pe, "ID", jo, "id", pd);
+			SetString(pe, PwDefs.UrlField, jo, "uri", pd);
+			// SetString(pe, "CharSet", jo, "charset", pd);
 
 			foreach(JsonObject joAnno in jo.GetValueArray<JsonObject>("annos", true))
 			{
@@ -131,8 +125,7 @@ namespace KeePass.DataExchange.Formats
 
 				if((strName == "bookmarkProperties/description") &&
 					!string.IsNullOrEmpty(strValue))
-					pe.Strings.Set(PwDefs.NotesField, new ProtectedString(
-						pwContext.MemoryProtection.ProtectNotes, strValue));
+					ImportUtil.Add(pe, PwDefs.NotesField, strValue, pd);
 			}
 
 			// Tags support (new versions)
@@ -142,7 +135,7 @@ namespace KeePass.DataExchange.Formats
 
 			string strKeyword = jo.GetValue<string>("keyword");
 			if(!string.IsNullOrEmpty(strKeyword))
-				ImportUtil.AppendToField(pe, "Keyword", strKeyword, pwContext);
+				ImportUtil.Add(pe, "Keyword", strKeyword, pd);
 
 			if((pe.Strings.ReadSafe(PwDefs.TitleField).Length != 0) ||
 				(pe.Strings.ReadSafe(PwDefs.UrlField).Length != 0))
@@ -152,13 +145,13 @@ namespace KeePass.DataExchange.Formats
 			}
 		}
 
-		private static void SetString(PwEntry pe, string strEntryKey, bool bProtect,
-			JsonObject jo, string strObjectKey)
+		private static void SetString(PwEntry pe, string strEntryKey,
+			JsonObject jo, string strObjectKey, PwDatabase pd)
 		{
 			string str = jo.GetValue<string>(strObjectKey);
 			if(string.IsNullOrEmpty(str)) return;
 
-			pe.Strings.Set(strEntryKey, new ProtectedString(bProtect, str));
+			ImportUtil.Add(pe, strEntryKey, str, pd);
 		}
 
 		// Tags support (old versions)

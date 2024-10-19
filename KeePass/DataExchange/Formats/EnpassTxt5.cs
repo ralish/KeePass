@@ -44,14 +44,12 @@ namespace KeePass.DataExchange.Formats
 
 		public override bool ImportAppendsToRootGroupOnly { get { return true; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			StreamReader sr = new StreamReader(sInput, StrUtil.Utf8, true);
-			string strData = sr.ReadToEnd();
-			sr.Close();
+			string strData = MemUtil.ReadString(sInput, StrUtil.Utf8);
 
-			PwGroup pg = pwStorage.RootGroup;
+			PwGroup pg = pdStorage.RootGroup;
 			const string strSep = ": "; // Both ": " and " : " are used
 
 			strData = StrUtil.NormalizeNewLines(strData, false);
@@ -111,7 +109,7 @@ namespace KeePass.DataExchange.Formats
 					strValue = strValue.Trim();
 
 					if(strValue.Length != 0)
-						ImportUtil.AppendToField(pe, strName, strValue, pwStorage);
+						ImportUtil.AppendToField(pe, strName, strValue, pdStorage);
 					else if(strName == PwDefs.NotesField)
 					{
 						ProtectedString ps = pe.Strings.GetSafe(strName);

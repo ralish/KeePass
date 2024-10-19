@@ -45,12 +45,10 @@ namespace KeePass.DataExchange.Formats
 
 		public override bool ImportAppendsToRootGroupOnly { get { return true; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			StreamReader sr = new StreamReader(sInput, StrUtil.Utf8, true);
-			string str = sr.ReadToEnd();
-			sr.Close();
+			string str = MemUtil.ReadString(sInput, StrUtil.Utf8);
 
 			// All fields are enclosed in '"', however '"' in data is
 			// not encoded (broken format)
@@ -79,7 +77,7 @@ namespace KeePass.DataExchange.Formats
 				string[] vLine = csr.ReadLine();
 				if(vLine == null) break;
 
-				AddEntry(vLine, pwStorage);
+				AddEntry(vLine, pdStorage);
 			}
 		}
 

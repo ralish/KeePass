@@ -51,22 +51,21 @@ namespace KeePass.DataExchange.Formats
 		private const string StrFieldType = "Type: ";
 		private const string StrFieldNotes = "Comments: ";
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			StreamReader sr = new StreamReader(sInput, Encoding.Default);
-			string strData = sr.ReadToEnd();
-			sr.Close();
+			string strData = MemUtil.ReadString(sInput, Encoding.Default);
 
 			strData = strData.Replace("\r", string.Empty);
-			string[] vLines = strData.Split(new char[] { '\n' });
 
+			string[] vLines = strData.Split(new char[] { '\n' });
 			if(vLines.Length >= 1)
 			{
 				Debug.Assert(vLines[0].StartsWith("Contents of: "));
 				vLines[0] = string.Empty; // Trigger 'new entry' below
 			}
 
+			PwGroup pg = pdStorage.RootGroup;
 			Dictionary<string, string> dItems = new Dictionary<string, string>();
 			bool bInNotes = false;
 			DateTime? dtExpire = null;
@@ -82,7 +81,7 @@ namespace KeePass.DataExchange.Formats
 					if((strLine.Length == 0) && (vLines[i + 2] == strSep) &&
 						(strSep.Length > 0))
 					{
-						AddEntry(pwStorage.RootGroup, dItems, ref bInNotes, ref dtExpire);
+						AddEntry(pg, dItems, ref bInNotes, ref dtExpire);
 						dItems.Clear();
 
 						dItems[PwDefs.TitleField] = vLines[i + 1];
@@ -127,7 +126,7 @@ namespace KeePass.DataExchange.Formats
 				else { Debug.Assert(false); }
 			}
 
-			AddEntry(pwStorage.RootGroup, dItems, ref bInNotes, ref dtExpire);
+			AddEntry(pg, dItems, ref bInNotes, ref dtExpire);
 			Debug.Assert(!dtExpire.HasValue);
 		}
 

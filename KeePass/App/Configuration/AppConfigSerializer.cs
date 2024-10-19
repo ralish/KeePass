@@ -210,8 +210,8 @@ namespace KeePass.App.Configuration
 			{
 				if(!File.Exists(g_strEnforcedConfigFile)) return null;
 
-				XmlDocument xd = XmlUtilEx.CreateXmlDocument();
-				xd.Load(g_strEnforcedConfigFile);
+				XmlDocument xd = XmlUtilEx.LoadXmlDocument(g_strEnforcedConfigFile,
+					StrUtil.Utf8);
 
 				if(bSetPrimary) g_xdEnforced = xd;
 				return xd;
@@ -251,8 +251,7 @@ namespace KeePass.App.Configuration
 				}
 				else // Enforced configuration
 				{
-					XmlDocument xd = XmlUtilEx.CreateXmlDocument();
-					xd.Load(strFilePath);
+					XmlDocument xd = XmlUtilEx.LoadXmlDocument(strFilePath, StrUtil.Utf8);
 
 					XmContext ctx = new XmContext(xd, AppConfigEx.GetNodeOptions,
 						AppConfigEx.GetNodeKey);

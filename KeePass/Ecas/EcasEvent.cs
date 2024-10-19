@@ -30,38 +30,38 @@ namespace KeePass.Ecas
 {
 	public sealed class EcasEvent : IDeepCloneable<EcasEvent>, IEcasObject
 	{
-		private PwUuid m_type = PwUuid.Zero;
+		private PwUuid m_puTypeE = PwUuid.Zero;
 		[XmlIgnore]
 		public PwUuid Type
 		{
-			get { return m_type; }
+			get { return m_puTypeE; }
 			set
 			{
 				if(value == null) throw new ArgumentNullException("value");
-				m_type = value;
+				m_puTypeE = value;
 			}
 		}
 
 		[XmlElement("TypeGuid")]
 		public string TypeString
 		{
-			get { return Convert.ToBase64String(m_type.UuidBytes, Base64FormattingOptions.None); }
+			get { return Convert.ToBase64String(m_puTypeE.UuidBytes); }
 			set
 			{
 				if(value == null) throw new ArgumentNullException("value");
-				m_type = new PwUuid(Convert.FromBase64String(value));
+				m_puTypeE = new PwUuid(Convert.FromBase64String(value));
 			}
 		}
 
-		private List<string> m_params = new List<string>();
+		private List<string> m_lParamsE = new List<string>();
 		[XmlArrayItem("Parameter")]
 		public List<string> Parameters
 		{
-			get { return m_params; }
+			get { return m_lParamsE; }
 			set
 			{
 				if(value == null) throw new ArgumentNullException("value");
-				m_params = value;
+				m_lParamsE = value;
 			}
 		}
 
@@ -81,19 +81,17 @@ namespace KeePass.Ecas
 		{
 			EcasEvent e = new EcasEvent();
 
-			e.m_type = m_type; // PwUuid is immutable
-
-			for(int i = 0; i < m_params.Count; ++i)
-				e.m_params.Add(m_params[i]);
+			e.m_puTypeE = m_puTypeE; // PwUuid is immutable
+			e.m_lParamsE.AddRange(m_lParamsE);
 
 			return e;
 		}
 
 		internal bool RestartTimer()
 		{
-			if(!m_type.Equals(EcasEventIDs.TimePeriodic)) { Debug.Assert(false); return false; }
+			if(!m_puTypeE.Equals(EcasEventIDs.TimePeriodic)) { Debug.Assert(false); return false; }
 
-			uint s = EcasUtil.GetParamUInt(m_params, 0);
+			uint s = EcasUtil.GetParamUInt(m_lParamsE, 0);
 			if(s == 0) return false;
 
 #if DEBUG

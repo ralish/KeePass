@@ -140,8 +140,6 @@ namespace KeePass.DataExchange
 			l.Add(new MozillaBookmarksJson100());
 			l.Add(new PwExporterXml105());
 
-			l.Add(new Spamex20070328());
-
 #if DEBUG
 			// Ensure name uniqueness
 			for(int i = 0; i < l.Count; ++i)

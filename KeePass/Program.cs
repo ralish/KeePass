@@ -118,7 +118,11 @@ namespace KeePass
 		private static int g_nAppMessage = 0;
 		public static int ApplicationMessage
 		{
-			get { Debug.Assert((g_nAppMessage != 0) || !g_bMain); return g_nAppMessage; }
+			get
+			{
+				Debug.Assert((g_nAppMessage != 0) || !g_bMain || NativeLib.IsUnix());
+				return g_nAppMessage;
+			}
 		}
 
 		private static MainForm g_formMain = null;
@@ -1119,21 +1123,16 @@ namespace KeePass
 				bool bDev = IsDevelopmentSnapshot();
 				if(bDev && !File.Exists(strPath)) return;
 
-				string strXml = File.ReadAllText(strPath, StrUtil.Utf8);
-				if(string.IsNullOrEmpty(strXml))
-					throw new Exception(KLRes.FileIncompleteExpc);
+				XmlDocument xd = XmlUtilEx.LoadXmlDocument(strPath, StrUtil.Utf8);
 
-				XmlDocument d = XmlUtilEx.CreateXmlDocument();
-				d.LoadXml(strXml);
-
-				XmlNamespaceManager nm = new XmlNamespaceManager(d.NameTable);
+				XmlNamespaceManager nm = new XmlNamespaceManager(xd.NameTable);
 				const string strAsm1P = "asm1";
 				const string strAsm1U = "urn:schemas-microsoft-com:asm.v1";
 				string strU = nm.LookupNamespace(strAsm1P);
 				if(strU == null) nm.AddNamespace(strAsm1P, strAsm1U);
 				else fAssert((strU == strAsm1U), true);
 
-				fAssertEx(d.SelectSingleNode(
+				fAssertEx(xd.SelectSingleNode(
 					"/configuration/startup/supportedRuntime[@version = \"v4.0\"]"));
 
 				if(!bDev)
@@ -1144,18 +1143,18 @@ namespace KeePass
 						u & 0xFFFFFFFFFFFF0000UL, 4);
 					string strNew = StrUtil.VersionToString(u, 4);
 
-					XmlNode n = d.SelectSingleNode("/configuration/runtime/" +
+					XmlNode xn = xd.SelectSingleNode("/configuration/runtime/" +
 						strAsm1P + ":assemblyBinding/" +
 						strAsm1P + ":dependentAssembly[" +
 						strAsm1P + ":assemblyIdentity/@name = \"KeePass\"]/" +
 						strAsm1P + ":bindingRedirect", nm);
-					fAssertEx(n);
+					fAssertEx(xn);
 
-					XmlAttribute a = n.Attributes["oldVersion"];
-					fAssert(((a != null) && (a.Value == strOld)), true);
+					XmlAttribute xa = xn.Attributes["oldVersion"];
+					fAssert(((xa != null) && (xa.Value == strOld)), true);
 
-					a = n.Attributes["newVersion"];
-					fAssert(((a != null) && (a.Value == strNew)), true);
+					xa = xn.Attributes["newVersion"];
+					fAssert(((xa != null) && (xa.Value == strNew)), true);
 				}
 			}
 			catch(Exception ex)

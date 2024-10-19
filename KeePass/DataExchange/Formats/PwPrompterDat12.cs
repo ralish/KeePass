@@ -31,7 +31,6 @@ using KeePass.UI;
 using KeePassLib;
 using KeePassLib.Interfaces;
 using KeePassLib.Resources;
-using KeePassLib.Security;
 
 namespace KeePass.DataExchange.Formats
 {
@@ -46,7 +45,7 @@ namespace KeePass.DataExchange.Formats
 
 		public override bool ImportAppendsToRootGroupOnly { get { return true; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
 			SingleLineEditForm dlg = new SingleLineEditForm();
@@ -60,8 +59,14 @@ namespace KeePass.DataExchange.Formats
 
 			byte[] pbPassword = Encoding.Default.GetBytes(strPassword);
 
-			BinaryReader br = new BinaryReader(sInput, Encoding.Default);
+			using(BinaryReader br = new BinaryReader(sInput, Encoding.Default))
+			{
+				Import(pdStorage, br, pbPassword);
+			}
+		}
 
+		private void Import(PwDatabase pd, BinaryReader br, byte[] pbPassword)
+		{
 			ushort usFileVersion = br.ReadUInt16();
 			if(usFileVersion != 0x0100)
 				throw new Exception(KLRes.FileVersionUnsupported);
@@ -76,7 +81,7 @@ namespace KeePass.DataExchange.Formats
 			byte btValidArrayLen = br.ReadByte();
 			byte[] pbValid = br.ReadBytes(btValidArrayLen);
 
-			if(pbPassword.Length > 0)
+			if(pbPassword.Length != 0)
 			{
 				MangleSetKey(pbPassword);
 				MangleDecode(pbKey);
@@ -91,23 +96,15 @@ namespace KeePass.DataExchange.Formats
 			for(uint uEntry = 0; uEntry < uEntries; ++uEntry)
 			{
 				PwEntry pe = new PwEntry(true, true);
-				pwStorage.RootGroup.AddEntry(pe, true);
+				pd.RootGroup.AddEntry(pe, true);
 
-				pe.Strings.Set(PwDefs.TitleField, new ProtectedString(
-					pwStorage.MemoryProtection.ProtectTitle, ReadString(br)));
-				pe.Strings.Set(PwDefs.UserNameField, new ProtectedString(
-					pwStorage.MemoryProtection.ProtectUserName, ReadString(br)));
-				pe.Strings.Set(PwDefs.PasswordField, new ProtectedString(
-					pwStorage.MemoryProtection.ProtectPassword, ReadString(br)));
-				pe.Strings.Set("Hint", new ProtectedString(false, ReadString(br)));
-				pe.Strings.Set(PwDefs.NotesField, new ProtectedString(
-					pwStorage.MemoryProtection.ProtectNotes, ReadString(br)));
-				pe.Strings.Set(PwDefs.UrlField, new ProtectedString(
-					pwStorage.MemoryProtection.ProtectUrl, ReadString(br)));
+				ImportUtil.Add(pe, PwDefs.TitleField, ReadString(br), pd);
+				ImportUtil.Add(pe, PwDefs.UserNameField, ReadString(br), pd);
+				ImportUtil.Add(pe, PwDefs.PasswordField, ReadString(br), pd);
+				ImportUtil.Add(pe, "Hint", ReadString(br), pd);
+				ImportUtil.Add(pe, PwDefs.NotesField, ReadString(br), pd);
+				ImportUtil.Add(pe, PwDefs.UrlField, ReadString(br), pd);
 			}
-
-			br.Close();
-			sInput.Close();
 		}
 
 		private string ReadString(BinaryReader br)

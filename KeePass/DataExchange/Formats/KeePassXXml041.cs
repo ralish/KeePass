@@ -23,16 +23,13 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Xml;
-using System.Xml.Serialization;
 
 using KeePass.Resources;
 using KeePass.Util;
 
 using KeePassLib;
-using KeePassLib.Collections;
 using KeePassLib.Interfaces;
 using KeePassLib.Security;
-using KeePassLib.Serialization;
 using KeePassLib.Utility;
 
 namespace KeePass.DataExchange.Formats
@@ -49,45 +46,28 @@ namespace KeePass.DataExchange.Formats
 
 		public override bool SupportsUuids { get { return false; } }
 
-		private const string ElemRoot = "database";
-
 		private const string ElemGroup = "group";
 		private const string ElemTitle = "title";
 		private const string ElemIcon = "icon";
 
-		private const string ElemEntry = "entry";
-		private const string ElemUserName = "username";
-		private const string ElemUrl = "url";
-		private const string ElemPassword = "password";
-		private const string ElemNotes = "comment";
-		private const string ElemCreationTime = "creation";
-		private const string ElemLastModTime = "lastmod";
-		private const string ElemLastAccessTime = "lastaccess";
-		private const string ElemExpiryTime = "expire";
-		private const string ElemAttachDesc = "bindesc";
-		private const string ElemAttachment = "bin";
-
-		private const string ValueNever = "Never";
-
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			XmlDocument xmlDoc = XmlUtilEx.CreateXmlDocument();
-			xmlDoc.Load(sInput);
+			XmlDocument xd = XmlUtilEx.LoadXmlDocument(sInput, StrUtil.Utf8);
 
-			XmlNode xmlRoot = xmlDoc.DocumentElement;
-			Debug.Assert(xmlRoot.Name == ElemRoot);
+			XmlNode xnRoot = xd.DocumentElement;
+			Debug.Assert(xnRoot.Name == "database");
 
 			Stack<PwGroup> vGroups = new Stack<PwGroup>();
-			vGroups.Push(pwStorage.RootGroup);
+			vGroups.Push(pdStorage.RootGroup);
 
-			int nNodeCount = xmlRoot.ChildNodes.Count;
+			int nNodeCount = xnRoot.ChildNodes.Count;
 			for(int i = 0; i < nNodeCount; ++i)
 			{
-				XmlNode xmlChild = xmlRoot.ChildNodes[i];
+				XmlNode xn = xnRoot.ChildNodes[i];
 
-				if(xmlChild.Name == ElemGroup)
-					ReadGroup(xmlChild, vGroups, pwStorage);
+				if(xn.Name == ElemGroup)
+					ReadGroup(xn, vGroups, pdStorage);
 				else { Debug.Assert(false); }
 
 				if(slLogger != null)
@@ -95,20 +75,20 @@ namespace KeePass.DataExchange.Formats
 			}
 		}
 
-		private static PwIcon ReadIcon(XmlNode xmlChild, PwIcon pwDefault)
+		private static PwIcon ReadIcon(XmlNode xn, PwIcon piDefault)
 		{
-			int nIcon;
-			if(StrUtil.TryParseInt(XmlUtil.SafeInnerText(xmlChild), out nIcon))
+			int i;
+			if(StrUtil.TryParseInt(XmlUtil.SafeInnerText(xn), out i))
 			{
-				if((nIcon >= 0) && (nIcon < (int)PwIcon.Count)) return (PwIcon)nIcon;
+				if((i >= 0) && (i < (int)PwIcon.Count)) return (PwIcon)i;
 			}
 			else { Debug.Assert(false); }
 
-			return pwDefault;
+			return piDefault;
 		}
 
-		private static void ReadGroup(XmlNode xmlNode, Stack<PwGroup> vGroups,
-			PwDatabase pwStorage)
+		private static void ReadGroup(XmlNode xnGroup, Stack<PwGroup> vGroups,
+			PwDatabase pd)
 		{
 			if(vGroups.Count == 0) { Debug.Assert(false); return; }
 			PwGroup pgParent = vGroups.Peek();
@@ -117,70 +97,59 @@ namespace KeePass.DataExchange.Formats
 			pgParent.AddGroup(pg, true);
 			vGroups.Push(pg);
 
-			foreach(XmlNode xmlChild in xmlNode)
+			foreach(XmlNode xn in xnGroup)
 			{
-				if(xmlChild.Name == ElemTitle)
-					pg.Name = XmlUtil.SafeInnerText(xmlChild);
-				else if(xmlChild.Name == ElemIcon)
-					pg.IconId = ReadIcon(xmlChild, pg.IconId);
-				else if(xmlChild.Name == ElemGroup)
-					ReadGroup(xmlChild, vGroups, pwStorage);
-				else if(xmlChild.Name == ElemEntry)
-					ReadEntry(xmlChild, pg, pwStorage);
+				if(xn.Name == ElemTitle)
+					pg.Name = XmlUtil.SafeInnerText(xn);
+				else if(xn.Name == ElemIcon)
+					pg.IconId = ReadIcon(xn, pg.IconId);
+				else if(xn.Name == ElemGroup)
+					ReadGroup(xn, vGroups, pd);
+				else if(xn.Name == "entry")
+					ReadEntry(xn, pg, pd);
 				else { Debug.Assert(false); }
 			}
 
 			vGroups.Pop();
 		}
 
-		private static void ReadEntry(XmlNode xmlNode, PwGroup pgParent,
-			PwDatabase pwStorage)
+		private static void ReadEntry(XmlNode xnEntry, PwGroup pgParent, PwDatabase pd)
 		{
 			PwEntry pe = new PwEntry(true, true);
 			pgParent.AddEntry(pe, true);
 
 			string strAttachDesc = null, strAttachment = null;
 
-			foreach(XmlNode xmlChild in xmlNode)
+			foreach(XmlNode xn in xnEntry)
 			{
-				if(xmlChild.Name == ElemTitle)
-					pe.Strings.Set(PwDefs.TitleField, new ProtectedString(
-						pwStorage.MemoryProtection.ProtectTitle,
-						XmlUtil.SafeInnerText(xmlChild)));
-				else if(xmlChild.Name == ElemUserName)
-					pe.Strings.Set(PwDefs.UserNameField, new ProtectedString(
-						pwStorage.MemoryProtection.ProtectUserName,
-						XmlUtil.SafeInnerText(xmlChild)));
-				else if(xmlChild.Name == ElemUrl)
-					pe.Strings.Set(PwDefs.UrlField, new ProtectedString(
-						pwStorage.MemoryProtection.ProtectUrl,
-						XmlUtil.SafeInnerText(xmlChild)));
-				else if(xmlChild.Name == ElemPassword)
-					pe.Strings.Set(PwDefs.PasswordField, new ProtectedString(
-						pwStorage.MemoryProtection.ProtectPassword,
-						XmlUtil.SafeInnerText(xmlChild)));
-				else if(xmlChild.Name == ElemNotes)
-					pe.Strings.Set(PwDefs.NotesField, new ProtectedString(
-						pwStorage.MemoryProtection.ProtectNotes,
-						FilterSpecial(XmlUtil.SafeInnerXml(xmlChild))));
-				else if(xmlChild.Name == ElemIcon)
-					pe.IconId = ReadIcon(xmlChild, pe.IconId);
-				else if(xmlChild.Name == ElemCreationTime)
-					pe.CreationTime = ParseTime(XmlUtil.SafeInnerText(xmlChild));
-				else if(xmlChild.Name == ElemLastModTime)
-					pe.LastModificationTime = ParseTime(XmlUtil.SafeInnerText(xmlChild));
-				else if(xmlChild.Name == ElemLastAccessTime)
-					pe.LastAccessTime = ParseTime(XmlUtil.SafeInnerText(xmlChild));
-				else if(xmlChild.Name == ElemExpiryTime)
+				if(xn.Name == ElemTitle)
+					ImportUtil.Add(pe, PwDefs.TitleField, xn, pd);
+				else if(xn.Name == "username")
+					ImportUtil.Add(pe, PwDefs.UserNameField, xn, pd);
+				else if(xn.Name == "url")
+					ImportUtil.Add(pe, PwDefs.UrlField, xn, pd);
+				else if(xn.Name == "password")
+					ImportUtil.Add(pe, PwDefs.PasswordField, xn, pd);
+				else if(xn.Name == "comment")
+					ImportUtil.Add(pe, PwDefs.NotesField, FilterSpecial(xn), pd);
+				else if(xn.Name == ElemIcon)
+					pe.IconId = ReadIcon(xn, pe.IconId);
+				else if(xn.Name == "creation")
+					pe.CreationTime = ParseTime(XmlUtil.SafeInnerText(xn));
+				else if(xn.Name == "lastmod")
+					pe.LastModificationTime = ParseTime(XmlUtil.SafeInnerText(xn));
+				else if(xn.Name == "lastaccess")
+					pe.LastAccessTime = ParseTime(XmlUtil.SafeInnerText(xn));
+				else if(xn.Name == "expire")
 				{
-					string strDate = XmlUtil.SafeInnerText(xmlChild);
-					pe.Expires = (strDate != ValueNever);
+					string strDate = XmlUtil.SafeInnerText(xn);
+					pe.Expires = (strDate != "Never");
 					if(pe.Expires) pe.ExpiryTime = ParseTime(strDate);
 				}
-				else if(xmlChild.Name == ElemAttachDesc)
-					strAttachDesc = XmlUtil.SafeInnerText(xmlChild);
-				else if(xmlChild.Name == ElemAttachment)
-					strAttachment = XmlUtil.SafeInnerText(xmlChild);
+				else if(xn.Name == "bindesc")
+					strAttachDesc = XmlUtil.SafeInnerText(xn);
+				else if(xn.Name == "bin")
+					strAttachment = XmlUtil.SafeInnerText(xn);
 				else { Debug.Assert(false); }
 			}
 
@@ -205,15 +174,14 @@ namespace KeePass.DataExchange.Formats
 			return DateTime.UtcNow;
 		}
 
-		private static string FilterSpecial(string strData)
+		private static string FilterSpecial(XmlNode xn)
 		{
-			string str = strData;
+			string str = XmlUtil.SafeInnerText(xn);
 			
-			str = str.Replace(@"<br/>", MessageService.NewLine);
-			str = str.Replace(@"<br />", MessageService.NewLine);
+			str = str.Replace("<br/>", MessageService.NewLine);
+			str = str.Replace("<br />", MessageService.NewLine);
 
-			str = StrUtil.XmlToString(str);
-			return str;
+			return StrUtil.XmlToString(str);
 		}
 	}
 }

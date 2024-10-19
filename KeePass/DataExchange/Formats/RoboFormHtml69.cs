@@ -30,7 +30,6 @@ using KeePass.Util;
 
 using KeePassLib;
 using KeePassLib.Interfaces;
-using KeePassLib.Security;
 using KeePassLib.Utility;
 
 namespace KeePass.DataExchange.Formats
@@ -45,12 +44,10 @@ namespace KeePass.DataExchange.Formats
 		public override string DefaultExtension { get { return "html|htm"; } }
 		public override string ApplicationGroup { get { return KPRes.PasswordManagers; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			StreamReader sr = new StreamReader(sInput, Encoding.Unicode, true);
-			string strData = sr.ReadToEnd();
-			sr.Close();
+			string strData = MemUtil.ReadString(sInput, Encoding.Unicode);
 
 			strData = strData.Replace(@"<WBR>", string.Empty);
 			strData = strData.Replace(@"&shy;", string.Empty);
@@ -61,7 +58,7 @@ namespace KeePass.DataExchange.Formats
 				wb.ScriptErrorsSuppressed = true;
 
 				UIUtil.SetWebBrowserDocument(wb, strData);
-				ImportPriv(pwStorage, wb.Document.Body);
+				ImportPriv(pdStorage, wb.Document.Body);
 			}
 		}
 
@@ -149,7 +146,7 @@ namespace KeePass.DataExchange.Formats
 					{
 						string strTitle = ParseTitle(XmlUtil.SafeInnerText(
 							lCaption[0]), pd, out pg);
-						ImportUtil.AppendToField(pe, PwDefs.TitleField, strTitle, pd);
+						ImportUtil.Add(pe, PwDefs.TitleField, strTitle, pd);
 						continue; // Data is in next TR
 					}
 
@@ -167,19 +164,18 @@ namespace KeePass.DataExchange.Formats
 						{
 							Debug.Assert(pg == null);
 							strText = ParseTitle(strText, pd, out pg);
-							ImportUtil.AppendToField(pe, PwDefs.TitleField, strText, pd);
+							ImportUtil.Add(pe, PwDefs.TitleField, strText, pd);
 						}
 						else if(strClass.Equals("subcaption", StrUtil.CaseIgnoreCmp))
-							ImportUtil.AppendToField(pe, PwDefs.UrlField,
-								ImportUtil.FixUrl(strText), pd);
+							ImportUtil.Add(pe, PwDefs.UrlField, ImportUtil.FixUrl(
+								strText), pd);
 						else if(strClass.Equals("field", StrUtil.CaseIgnoreCmp))
 						{
 							// 7.9.2.5+
 							if(strText.EndsWith(":") && !bNotesHeaderFound)
 								bNotesHeaderFound = true;
 							else
-								ImportUtil.AppendToField(pe, PwDefs.NotesField,
-									strText.Trim(), pd);
+								ImportUtil.Add(pe, PwDefs.NotesField, strText.Trim(), pd);
 						}
 						else { Debug.Assert(false); }
 					}
@@ -193,7 +189,7 @@ namespace KeePass.DataExchange.Formats
 							strKey = strKey.Substring(0, strKey.Length - 1);
 
 						if(strKey.Length > 0)
-							ImportUtil.AppendToField(pe, MapKey(strKey), strValue, pd);
+							ImportUtil.Add(pe, MapKey(strKey), strValue, pd);
 						else { Debug.Assert(false); }
 					}
 					else { Debug.Assert(false); }

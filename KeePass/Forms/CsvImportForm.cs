@@ -40,7 +40,7 @@ namespace KeePass.Forms
 	public partial class CsvImportForm : Form
 	{
 		private byte[] m_pbData = null;
-		private PwDatabase m_pwDatabase = null;
+		private PwDatabase m_pd = null;
 
 		private bool m_bInitializing = true;
 		private uint m_uStartOffset = 0;
@@ -88,9 +88,9 @@ namespace KeePass.Forms
 			}
 		}
 
-		public void InitEx(PwDatabase pwStorage, byte[] pbInData)
+		public void InitEx(PwDatabase pd, byte[] pbInData)
 		{
-			m_pwDatabase = pwStorage;
+			m_pd = pd;
 			m_pbData = pbInData;
 		}
 
@@ -102,7 +102,7 @@ namespace KeePass.Forms
 
 		private void OnFormLoad(object sender, EventArgs e)
 		{
-			if((m_pbData == null) || (m_pwDatabase == null))
+			if((m_pbData == null) || (m_pd == null))
 				throw new InvalidOperationException();
 
 			m_bInitializing = true;
@@ -583,23 +583,18 @@ namespace KeePass.Forms
 						pg = FindCreateGroup(strField, pgStorage, dGroups,
 							cfi.Format, opt, bMergeGroups);
 					else if(cfi.Type == CsvFieldType.Title)
-						ImportUtil.AppendToField(pe, PwDefs.TitleField,
-							strField, m_pwDatabase);
+						ImportUtil.Add(pe, PwDefs.TitleField, strField, m_pd);
 					else if(cfi.Type == CsvFieldType.UserName)
-						ImportUtil.AppendToField(pe, PwDefs.UserNameField,
-							strField, m_pwDatabase);
+						ImportUtil.Add(pe, PwDefs.UserNameField, strField, m_pd);
 					else if(cfi.Type == CsvFieldType.Password)
-						ImportUtil.AppendToField(pe, PwDefs.PasswordField,
-							strField, m_pwDatabase);
+						ImportUtil.Add(pe, PwDefs.PasswordField, strField, m_pd);
 					else if(cfi.Type == CsvFieldType.Url)
-						ImportUtil.AppendToField(pe, PwDefs.UrlField,
-							strField, m_pwDatabase);
+						ImportUtil.Add(pe, PwDefs.UrlField, strField, m_pd);
 					else if(cfi.Type == CsvFieldType.Notes)
-						ImportUtil.AppendToField(pe, PwDefs.NotesField,
-							strField, m_pwDatabase);
+						ImportUtil.Add(pe, PwDefs.NotesField, strField, m_pd);
 					else if(cfi.Type == CsvFieldType.CustomString)
-						ImportUtil.AppendToField(pe, (string.IsNullOrEmpty(cfi.Name) ?
-							PwDefs.NotesField : cfi.Name), strField, m_pwDatabase);
+						ImportUtil.Add(pe, (string.IsNullOrEmpty(cfi.Name) ?
+							PwDefs.NotesField : cfi.Name), strField, m_pd);
 					else if(cfi.Type == CsvFieldType.CreationTime)
 						pe.CreationTime = ParseDateTime(ref strField, cfi, dtNow);
 					// else if(cfi.Type == CsvFieldType.LastAccessTime)
@@ -777,7 +772,7 @@ namespace KeePass.Forms
 
 		private void OnBtnOK(object sender, EventArgs e)
 		{
-			try { PerformImport(m_pwDatabase.RootGroup, false); }
+			try { PerformImport(m_pd.RootGroup, false); }
 			catch(Exception ex) { MessageService.ShowWarning(ex); }
 		}
 

@@ -27,7 +27,6 @@ using KeePass.Resources;
 
 using KeePassLib;
 using KeePassLib.Interfaces;
-using KeePassLib.Security;
 using KeePassLib.Utility;
 
 namespace KeePass.DataExchange.Formats
@@ -134,12 +133,10 @@ namespace KeePass.DataExchange.Formats
 			}
 		}
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			StreamReader sr = new StreamReader(sInput, Encoding.Default, true);
-			string strData = sr.ReadToEnd();
-			sr.Close();
+			string strData = MemUtil.ReadString(sInput, Encoding.Default);
 
 			CsvOptions o = new CsvOptions();
 			o.BackslashIsEscape = false;
@@ -173,12 +170,12 @@ namespace KeePass.DataExchange.Formats
 				}
 
 				if(vLine.Length == 13)
-					ProcessCsvLine(vLine, pwStorage, dictGroups);
+					ProcessCsvLine(vLine, pdStorage, dictGroups);
 				else { Debug.Assert(false); }
 			}
 		}
 
-		private static void ProcessCsvLine(string[] vLine, PwDatabase pwStorage,
+		private static void ProcessCsvLine(string[] vLine, PwDatabase pd,
 			SortedDictionary<string, PwGroup> dictGroups)
 		{
 			string strType = ParseCsvWord(vLine[0]);
@@ -210,7 +207,7 @@ namespace KeePass.DataExchange.Formats
 				pg = new PwGroup(true, true);
 				pg.Name = strGroupName;
 
-				pwStorage.RootGroup.AddGroup(pg, true);
+				pd.RootGroup.AddGroup(pg, true);
 				dictGroups[strGroupName] = pg;
 			}
 
@@ -230,11 +227,10 @@ namespace KeePass.DataExchange.Formats
 					null);
 				string strField = (strLookup ?? ("Field " + (iField + 1).ToString()));
 
-				ImportUtil.AppendToField(pe, strField, strData, pwStorage);
+				ImportUtil.AppendToField(pe, strField, strData, pd);
 			}
 
-			ImportUtil.AppendToField(pe, PwDefs.NotesField, ParseCsvWord(vLine[11]),
-				pwStorage);
+			ImportUtil.Add(pe, PwDefs.NotesField, ParseCsvWord(vLine[11]), pd);
 
 			DateTime? odt = TimeUtil.ParseUSTextDate(ParseCsvWord(vLine[10]),
 				DateTimeKind.Local);

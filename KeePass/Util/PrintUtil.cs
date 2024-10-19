@@ -55,30 +55,24 @@ namespace KeePass.Util
 		{
 			if(NativeLib.IsUnix()) return false;
 
-			RegistryKey k = null;
 			try
 			{
-				k = Registry.ClassesRoot.OpenSubKey(
-					"htmlfile\\shell\\print\\command", false);
-				if(k == null) { Debug.Assert(false); return false; }
-
-				string str = (k.GetValue(string.Empty) as string);
+				string str = RegUtil.GetValue<string>(
+					"HKEY_CLASSES_ROOT\\htmlfile\\shell\\print\\command", string.Empty);
 				if(string.IsNullOrEmpty(str)) { Debug.Assert(false); return false; }
 				str = FixPrintCommandLine(str);
 
 				string strPath = Program.TempFilesPool.GetTempFileName("html");
 
 				string strOrg = str;
-				str = UrlUtil.ExpandShellVariables(str, new string[] {
-					strPath }, true);
+				str = UrlUtil.ExpandShellVariables(str, new string[] { strPath }, true);
 				if(str == strOrg) { Debug.Assert(false); return false; }
 
 				File.WriteAllText(strPath, strHtml, StrUtil.Utf8);
-				WinUtil.OpenUrl("cmd://" + str, null, false);
+				WinUtil.OpenUrl("cmd://" + str, null, false, null, false);
 				return true;
 			}
 			catch(Exception) { Debug.Assert(false); }
-			finally { if(k != null) k.Close(); }
 
 			return false;
 		}

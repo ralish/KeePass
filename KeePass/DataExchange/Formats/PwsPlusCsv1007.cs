@@ -41,12 +41,10 @@ namespace KeePass.DataExchange.Formats
 		public override string DefaultExtension { get { return "csv"; } }
 		public override string ApplicationGroup { get { return KPRes.PasswordManagers; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			StreamReader sr = new StreamReader(sInput, Encoding.Default);
-			string strData = sr.ReadToEnd();
-			sr.Close();
+			string strData = MemUtil.ReadString(sInput, Encoding.Default);
 
 			CsvStreamReader csv = new CsvStreamReader(strData, true);
 			Dictionary<string, PwGroup> dictGroups = new Dictionary<string, PwGroup>();
@@ -65,14 +63,14 @@ namespace KeePass.DataExchange.Formats
 
 				string strGroup = vLine[2].Trim();
 				PwGroup pg;
-				if(strGroup.Length == 0) pg = pwStorage.RootGroup;
+				if(strGroup.Length == 0) pg = pdStorage.RootGroup;
 				else
 				{
 					if(dictGroups.ContainsKey(strGroup)) pg = dictGroups[strGroup];
 					else
 					{
 						pg = new PwGroup(true, true, strGroup, PwIcon.Folder);
-						pwStorage.RootGroup.AddGroup(pg, true);
+						pdStorage.RootGroup.AddGroup(pg, true);
 						dictGroups[strGroup] = pg;
 					}
 				}
@@ -82,7 +80,7 @@ namespace KeePass.DataExchange.Formats
 
 				string strTitle = vLine[1].Trim();
 				if(strTitle.Length > 0)
-					ImportUtil.AppendToField(pe, PwDefs.TitleField, strTitle, pwStorage);
+					ImportUtil.Add(pe, PwDefs.TitleField, strTitle, pdStorage);
 
 				for(int i = 0; i < 10; ++i)
 				{
@@ -92,7 +90,7 @@ namespace KeePass.DataExchange.Formats
 
 					string strMapped = ImportUtil.MapNameToStandardField(strKey, true);
 					if(string.IsNullOrEmpty(strMapped)) strMapped = strKey;
-					ImportUtil.AppendToField(pe, strMapped, strValue, pwStorage);
+					ImportUtil.Add(pe, strMapped, strValue, pdStorage);
 				}
 
 				string strNotesPre = pe.Strings.ReadSafe(PwDefs.NotesField);
@@ -100,10 +98,10 @@ namespace KeePass.DataExchange.Formats
 				if(strNotes.Length > 0)
 				{
 					if(strNotesPre.Length == 0)
-						ImportUtil.AppendToField(pe, PwDefs.NotesField, strNotes, pwStorage);
+						ImportUtil.Add(pe, PwDefs.NotesField, strNotes, pdStorage);
 					else
 						pe.Strings.Set(PwDefs.NotesField, new ProtectedString(
-							pwStorage.MemoryProtection.ProtectNotes, strNotesPre +
+							pdStorage.MemoryProtection.ProtectNotes, strNotesPre +
 							Environment.NewLine + Environment.NewLine + strNotes));
 				}
 			}

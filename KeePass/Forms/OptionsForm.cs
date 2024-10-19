@@ -548,6 +548,13 @@ namespace KeePass.Forms
 			m_lvGuiOptions.Groups.Add(lvg);
 			m_cdxGuiOptions.CreateItem(Program.Config.UI, "ShowRecycleConfirmDialog",
 				lvg, KPRes.RecycleShowConfirm);
+			m_cdxGuiOptions.CreateItem(Program.Config.UI, "ShowCmdUriConfirmDialog",
+				lvg, KPRes.UriRunConfirm.Replace("{PARAM}", "cmd://"));
+			m_cdxGuiOptions.CreateItem(Program.Config.UI, "ShowCmdPlhConfirmDialog",
+				lvg, KPRes.PlhSprConfirm.Replace("{PARAM}", "{CMD:...}"));
+			m_cdxGuiOptions.CreateItem(Program.Config.UI, "ShowRefPPlhConfirmDialog",
+				lvg, KPRes.PlhSprConfirm.Replace("{PARAM}", "{REF:P@...}") +
+				" (" + KPRes.ActionLower + ")");
 			m_cdxGuiOptions.CreateItem(Program.Config.UI, "ShowDbMntncResultsDialog",
 				lvg, KPRes.DbMntncResults);
 			m_cdxGuiOptions.CreateItem(Program.Config.UI, "ShowEmSheetDialog",

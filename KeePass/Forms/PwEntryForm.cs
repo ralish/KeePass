@@ -1311,10 +1311,11 @@ namespace KeePass.Forms
 			}
 			else // nSelCount > 1
 			{
-				FolderBrowserDialog fbd = UIUtil.CreateFolderBrowserDialog(KPRes.AttachmentsSave);
-
-				if(fbd.ShowDialog() == DialogResult.OK)
+				using(FolderBrowserDialog fbd = UIUtil.CreateFolderBrowserDialog(
+					KPRes.AttachmentsSave))
 				{
+					if(fbd.ShowDialog() != DialogResult.OK) return;
+
 					string strRootPath = UrlUtil.EnsureTerminatingSeparator(
 						fbd.SelectedPath, false);
 
@@ -1322,7 +1323,6 @@ namespace KeePass.Forms
 						SaveAttachmentTo(lvi, strRootPath + UrlUtil.GetSafeFileName(
 							lvi.Text), true);
 				}
-				fbd.Dispose();
 			}
 		}
 

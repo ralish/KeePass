@@ -36,20 +36,11 @@ namespace KeePass.DataExchange.Formats
 	// 4.1.2+
 	internal sealed class PwSaverXml412 : FileFormatProvider
 	{
-		private const string ElemRoot = "ROOT";
-
 		private const string ElemGroup = "FOLDER";
-		private const string ElemRecycleBin = "GARBAGE";
 		private const string ElemEntry = "RECORD";
 
 		private const string ElemName = "NAME";
 		private const string ElemIcon = "ICON";
-
-		private const string ElemFields = "FIELDS";
-		private const string ElemField = "FIELD";
-		private const string ElemID = "ID";
-		private const string ElemType = "TYPE";
-		private const string ElemValue = "VALUE";
 
 		public override bool SupportsImport { get { return true; } }
 		public override bool SupportsExport { get { return false; } }
@@ -58,34 +49,29 @@ namespace KeePass.DataExchange.Formats
 		public override string DefaultExtension { get { return "xml"; } }
 		public override string ApplicationGroup { get { return KPRes.PasswordManagers; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			StreamReader sr = new StreamReader(sInput, StrUtil.Utf8);
-			string strDoc = sr.ReadToEnd();
-			sr.Close();
+			XmlDocument xd = XmlUtilEx.LoadXmlDocument(sInput, StrUtil.Utf8);
 
-			XmlDocument doc = XmlUtilEx.CreateXmlDocument();
-			doc.LoadXml(strDoc);
+			XmlNode xnRoot = xd.DocumentElement;
+			Debug.Assert(xnRoot.Name == "ROOT");
 
-			XmlElement xmlRoot = doc.DocumentElement;
-			Debug.Assert(xmlRoot.Name == ElemRoot);
+			PwGroup pgRoot = pdStorage.RootGroup;
 
-			PwGroup pgRoot = pwStorage.RootGroup;
-
-			foreach(XmlNode xmlChild in xmlRoot.ChildNodes)
+			foreach(XmlNode xn in xnRoot.ChildNodes)
 			{
-				if(xmlChild.Name == ElemGroup)
-					ImportGroup(xmlChild, pgRoot, pwStorage, false);
-				else if(xmlChild.Name == ElemRecycleBin)
-					ImportGroup(xmlChild, pgRoot, pwStorage, true);
-				else if(xmlChild.Name == ElemEntry)
-					ImportEntry(xmlChild, pgRoot, pwStorage);
+				if(xn.Name == ElemGroup)
+					ImportGroup(xn, pgRoot, pdStorage, false);
+				else if(xn.Name == "GARBAGE")
+					ImportGroup(xn, pgRoot, pdStorage, true);
+				else if(xn.Name == ElemEntry)
+					ImportEntry(xn, pgRoot, pdStorage);
 				else { Debug.Assert(false); }
 			}
 		}
 
-		private static void ImportGroup(XmlNode xn, PwGroup pgParent, PwDatabase pd,
+		private static void ImportGroup(XmlNode xnGroup, PwGroup pgParent, PwDatabase pd,
 			bool bIsRecycleBin)
 		{
 			PwGroup pg;
@@ -108,61 +94,60 @@ namespace KeePass.DataExchange.Formats
 				}
 			}
 
-			foreach(XmlNode xmlChild in xn.ChildNodes)
+			foreach(XmlNode xn in xnGroup.ChildNodes)
 			{
-				if(xmlChild.Name == ElemName)
-					pg.Name = XmlUtil.SafeInnerText(xmlChild);
-				else if(xmlChild.Name == ElemIcon)
-					pg.IconId = GetIcon(XmlUtil.SafeInnerText(xmlChild));
-				else if(xmlChild.Name == ElemGroup)
-					ImportGroup(xmlChild, pg, pd, false);
-				else if(xmlChild.Name == ElemEntry)
-					ImportEntry(xmlChild, pg, pd);
+				if(xn.Name == ElemName)
+					pg.Name = XmlUtil.SafeInnerText(xn);
+				else if(xn.Name == ElemIcon)
+					pg.IconId = GetIcon(xn);
+				else if(xn.Name == ElemGroup)
+					ImportGroup(xn, pg, pd, false);
+				else if(xn.Name == ElemEntry)
+					ImportEntry(xn, pg, pd);
 				else { Debug.Assert(false); }
 			}
 		}
 
-		private static void ImportEntry(XmlNode xn, PwGroup pgParent, PwDatabase pd)
+		private static void ImportEntry(XmlNode xnEntry, PwGroup pgParent, PwDatabase pd)
 		{
 			PwEntry pe = new PwEntry(true, true);
 			pgParent.AddEntry(pe, true);
 
-			foreach(XmlNode xmlChild in xn.ChildNodes)
+			foreach(XmlNode xn in xnEntry.ChildNodes)
 			{
-				if(xmlChild.Name == ElemName)
-					ImportUtil.AppendToField(pe, PwDefs.TitleField,
-						XmlUtil.SafeInnerText(xmlChild), pd);
-				else if(xmlChild.Name == ElemIcon)
-					pe.IconId = GetIcon(XmlUtil.SafeInnerText(xmlChild));
-				else if(xmlChild.Name == ElemFields)
-					ImportFields(xmlChild, pe, pd);
+				if(xn.Name == ElemName)
+					ImportUtil.Add(pe, PwDefs.TitleField, xn, pd);
+				else if(xn.Name == ElemIcon)
+					pe.IconId = GetIcon(xn);
+				else if(xn.Name == "FIELDS")
+					ImportFields(xn, pe, pd);
 				else { Debug.Assert(false); }
 			}
 		}
 
-		private static void ImportFields(XmlNode xn, PwEntry pe, PwDatabase pd)
+		private static void ImportFields(XmlNode xnFields, PwEntry pe, PwDatabase pd)
 		{
-			foreach(XmlNode xmlChild in xn.ChildNodes)
+			foreach(XmlNode xn in xnFields.ChildNodes)
 			{
-				if(xmlChild.Name == ElemField)
-					ImportField(xmlChild, pe, pd);
+				if(xn.Name == "FIELD")
+					ImportField(xn, pe, pd);
 				else { Debug.Assert(false); }
 			}
 		}
 
-		private static void ImportField(XmlNode xn, PwEntry pe, PwDatabase pd)
+		private static void ImportField(XmlNode xnField, PwEntry pe, PwDatabase pd)
 		{
 			string strName = null;
 			string strValue = null;
 
-			foreach(XmlNode xmlChild in xn.ChildNodes)
+			foreach(XmlNode xn in xnField.ChildNodes)
 			{
-				if(xmlChild.Name == ElemID) { }
-				else if(xmlChild.Name == ElemName)
-					strName = XmlUtil.SafeInnerText(xmlChild);
-				else if(xmlChild.Name == ElemType) { }
-				else if(xmlChild.Name == ElemValue)
-					strValue = XmlUtil.SafeInnerText(xmlChild);
+				if(xn.Name == "ID") { }
+				else if(xn.Name == ElemName)
+					strName = XmlUtil.SafeInnerText(xn);
+				else if(xn.Name == "TYPE") { }
+				else if(xn.Name == "VALUE")
+					strValue = XmlUtil.SafeInnerText(xn);
 				else { Debug.Assert(false); }
 			}
 
@@ -180,15 +165,16 @@ namespace KeePass.DataExchange.Formats
 
 				if(string.IsNullOrEmpty(strF)) strF = strName;
 
-				ImportUtil.AppendToField(pe, strF, strValue, pd, null, true);
+				ImportUtil.Add(pe, strF, strValue, pd);
 			}
 		}
 
-		private static PwIcon GetIcon(string strName)
+		private static PwIcon GetIcon(XmlNode xn)
 		{
-			if(string.IsNullOrEmpty(strName)) { Debug.Assert(false); return PwIcon.Key; }
+			string str = XmlUtil.SafeInnerText(xn);
+			if(string.IsNullOrEmpty(str)) { Debug.Assert(false); return PwIcon.Key; }
 
-			string str = strName.ToUpperInvariant();
+			str = str.ToUpperInvariant();
 
 			if(str == "FOLDER") return PwIcon.Folder;
 			if(str == "RECORD") return PwIcon.Key;

@@ -43,11 +43,12 @@ namespace KeePass.Util
 
 		public static string SafeInnerText(XmlNode xmlNode, string strNewLineCode)
 		{
-			if(string.IsNullOrEmpty(strNewLineCode))
-				return SafeInnerText(xmlNode);
+			string str = SafeInnerText(xmlNode);
 
-			string strInner = SafeInnerText(xmlNode);
-			return strInner.Replace(strNewLineCode, "\r\n");
+			if(!string.IsNullOrEmpty(strNewLineCode))
+				str = str.Replace(strNewLineCode, MessageService.NewLine);
+
+			return str;
 		}
 
 		public static string SafeInnerXml(XmlNode xmlNode)

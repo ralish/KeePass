@@ -517,6 +517,15 @@ namespace KeePass.Util.XmlSerialization
 					case "ShowRecycleConfirmDialog":
 						o.ShowRecycleConfirmDialog = ReadBoolean(xr);
 						break;
+					case "ShowCmdUriConfirmDialog":
+						o.ShowCmdUriConfirmDialog = ReadBoolean(xr);
+						break;
+					case "ShowCmdPlhConfirmDialog":
+						o.ShowCmdPlhConfirmDialog = ReadBoolean(xr);
+						break;
+					case "ShowRefPPlhConfirmDialog":
+						o.ShowRefPPlhConfirmDialog = ReadBoolean(xr);
+						break;
 					case "ShowDbMntncResultsDialog":
 						o.ShowDbMntncResultsDialog = ReadBoolean(xr);
 						break;

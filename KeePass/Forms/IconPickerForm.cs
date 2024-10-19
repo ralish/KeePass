@@ -437,7 +437,7 @@ namespace KeePass.Forms
 				{
 					strError = StrUtil.FormatException(ex, null);
 				}
-				finally { msPng.Close(); }
+				finally { msPng.Dispose(); }
 
 				if(!string.IsNullOrEmpty(strError))
 					MessageService.ShowWarning(strFile, strError);
@@ -519,13 +519,15 @@ namespace KeePass.Forms
 			}
 			else // lvsic.Count >= 2
 			{
-				FolderBrowserDialog fbd = UIUtil.CreateFolderBrowserDialog(KPRes.ExportToPrompt);
-				if(fbd.ShowDialog() != DialogResult.OK) return;
+				string strDir;
+				using(FolderBrowserDialog fbd = UIUtil.CreateFolderBrowserDialog(
+					KPRes.ExportToPrompt))
+				{
+					if(fbd.ShowDialog() != DialogResult.OK) return;
+					strDir = UrlUtil.EnsureTerminatingSeparator(fbd.SelectedPath, false);
+				}
 
-				string strDir = UrlUtil.EnsureTerminatingSeparator(
-					fbd.SelectedPath, false);
 				Dictionary<string, int> dStart = new Dictionary<string, int>();
-
 				foreach(ListViewItem lvi in lvsic)
 				{
 					try

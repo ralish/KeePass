@@ -76,10 +76,10 @@ namespace KeePass.DataExchange.Formats
 			return ((r == iYes) || (r == (int)DialogResult.OK));
 		}
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			KdbxFile kdbx = new KdbxFile(pwStorage);
+			KdbxFile kdbx = new KdbxFile(pdStorage);
 			// CappedByteStream s = new CappedByteStream(sInput, 64);
 
 			kdbx.RepairMode = true;

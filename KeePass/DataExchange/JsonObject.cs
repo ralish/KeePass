@@ -319,24 +319,6 @@ namespace KeePass.DataExchange
 			return u;
 		}
 
-		private static T ConvertOrDefault<T>(object o, T tDefault)
-			where T : struct // Use 'as' for class
-		{
-			if(o == null) return tDefault;
-
-			try
-			{
-				if(o is T) return (T)o;
-				return (T)Convert.ChangeType(o, typeof(T));
-			}
-			catch(Exception) { Debug.Assert(false); }
-
-			try { return (T)o; }
-			catch(Exception) { Debug.Assert(false); }
-
-			return tDefault;
-		}
-
 		public T GetValue<T>(string strKey)
 			where T : class
 		{
@@ -354,7 +336,7 @@ namespace KeePass.DataExchange
 
 			object o;
 			m_dItems.TryGetValue(strKey, out o);
-			return ConvertOrDefault(o, tDefault);
+			return MemUtil.ConvertObject<T>(o, tDefault);
 		}
 
 		public T[] GetValueArray<T>(string strKey)
@@ -389,7 +371,7 @@ namespace KeePass.DataExchange
 
 			T[] vT = new T[lO.Count];
 			for(int i = 0; i < lO.Count; ++i)
-				vT[i] = ConvertOrDefault(lO[i], tDefault);
+				vT[i] = MemUtil.ConvertObject<T>(lO[i], tDefault);
 
 			return vT;
 		}

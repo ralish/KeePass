@@ -628,30 +628,21 @@ namespace KeePass.Forms
 			pd.RootGroup.AddGroup(pg, true);
 
 			PwEntry pe = new PwEntry(true, true);
-			pe.Strings.Set(PwDefs.TitleField, new ProtectedString(pd.MemoryProtection.ProtectTitle,
-				KPRes.SampleEntry));
-			pe.Strings.Set(PwDefs.UserNameField, new ProtectedString(pd.MemoryProtection.ProtectUserName,
-				KPRes.UserName));
-			pe.Strings.Set(PwDefs.UrlField, new ProtectedString(pd.MemoryProtection.ProtectUrl,
-				PwDefs.HomepageUrl));
-			pe.Strings.Set(PwDefs.PasswordField, new ProtectedString(pd.MemoryProtection.ProtectPassword,
-				KPRes.Password));
-			pe.Strings.Set(PwDefs.NotesField, new ProtectedString(pd.MemoryProtection.ProtectNotes,
-				KPRes.Notes));
+			ImportUtil.Add(pe, PwDefs.TitleField, KPRes.SampleEntry, pd);
+			ImportUtil.Add(pe, PwDefs.UserNameField, KPRes.UserName, pd);
+			ImportUtil.Add(pe, PwDefs.PasswordField, KPRes.Password, pd);
+			ImportUtil.Add(pe, PwDefs.UrlField, PwDefs.HomepageUrl, pd);
+			ImportUtil.Add(pe, PwDefs.NotesField, KPRes.Notes, pd);
 			pe.AutoType.Add(new AutoTypeAssociation(KPRes.TargetWindow,
 				@"{USERNAME}{TAB}{PASSWORD}{TAB}{ENTER}"));
 			// for(int i = 0; i < 30; ++i) pe.CustomData.Set("Test" + i.ToString("D2"), "12345");
 			pd.RootGroup.AddEntry(pe, true);
 
 			pe = new PwEntry(true, true);
-			pe.Strings.Set(PwDefs.TitleField, new ProtectedString(pd.MemoryProtection.ProtectTitle,
-				KPRes.SampleEntry + " #2"));
-			pe.Strings.Set(PwDefs.UserNameField, new ProtectedString(pd.MemoryProtection.ProtectUserName,
-				"Michael321"));
-			pe.Strings.Set(PwDefs.UrlField, new ProtectedString(pd.MemoryProtection.ProtectUrl,
-				PwDefs.HelpUrl + "kb/testform.html"));
-			pe.Strings.Set(PwDefs.PasswordField, new ProtectedString(pd.MemoryProtection.ProtectPassword,
-				"12345"));
+			ImportUtil.Add(pe, PwDefs.TitleField, KPRes.SampleEntry + " #2", pd);
+			ImportUtil.Add(pe, PwDefs.UserNameField, "Michael321", pd);
+			ImportUtil.Add(pe, PwDefs.PasswordField, "12345", pd);
+			ImportUtil.Add(pe, PwDefs.UrlField, PwDefs.HelpUrl + "kb/testform.html", pd);
 			pe.AutoType.Add(new AutoTypeAssociation("*Test Form - KeePass*", string.Empty));
 			pd.RootGroup.AddEntry(pe, true);
 

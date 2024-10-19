@@ -107,8 +107,7 @@ namespace KeePass.DataExchange
 			// an all-or-nothing import
 			PwGroup pgVirt = new PwGroup(true, true);
 
-			try { ImportPriv(pgVirt, s, p, pdContext); }
-			finally { s.Close(); }
+			ImportPriv(pgVirt, s, p, pdContext);
 
 			foreach(PwGroup pg in pgVirt.Groups)
 				pgStorage.AddGroup(pg, true);
@@ -120,18 +119,14 @@ namespace KeePass.DataExchange
 			PwDatabase pdContext)
 		{
 			StrEncodingInfo sei = StrUtil.GetEncoding(p.Encoding);
-			StreamReader srRaw;
-			if((sei != null) && (sei.Encoding != null))
-				srRaw = new StreamReader(s, sei.Encoding, true);
-			else srRaw = new StreamReader(s, true);
-			string strDoc = srRaw.ReadToEnd();
-			srRaw.Close();
+			Encoding enc = (((sei != null) ? sei.Encoding : null) ?? StrUtil.Utf8);
+			string strDoc = MemUtil.ReadString(s, enc);
 
 			strDoc = Preprocess(strDoc, p);
 
-			using(StringReader srDoc = new StringReader(strDoc))
+			using(StringReader sr = new StringReader(strDoc))
 			{
-				using(XmlReader xr = XmlReader.Create(srDoc,
+				using(XmlReader xr = XmlReader.Create(sr,
 					XmlUtilEx.CreateXmlReaderSettings()))
 				{
 					XPathDocument xd = new XPathDocument(xr);

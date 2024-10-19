@@ -52,12 +52,10 @@ namespace KeePass.DataExchange.Formats
 
 		private const string m_strModifiedHdrStart = "Modified";
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			StreamReader sr = new StreamReader(sInput, Encoding.Default);
-			string strData = sr.ReadToEnd();
-			sr.Close();
+			string strData = MemUtil.ReadString(sInput, Encoding.Default);
 
 			// Normalize 2.70 files
 			strData = strData.Replace("<td class=\"c1\" nowrap>", m_strStartTd);
@@ -87,7 +85,7 @@ namespace KeePass.DataExchange.Formats
 			int nOffset = 0;
 
 			PwEntry peHeader;
-			if(!ReadEntry(out peHeader, strData, ref nOffset, pwStorage))
+			if(!ReadEntry(out peHeader, strData, ref nOffset, pdStorage))
 			{
 				Debug.Assert(false);
 				return;
@@ -96,14 +94,14 @@ namespace KeePass.DataExchange.Formats
 			while((nOffset >= 0) && (nOffset < strData.Length))
 			{
 				PwEntry pe;
-				if(!ReadEntry(out pe, strData, ref nOffset, pwStorage))
+				if(!ReadEntry(out pe, strData, ref nOffset, pdStorage))
 				{
 					Debug.Assert(false);
 					break;
 				}
 				if(pe == null) break;
 
-				pwStorage.RootGroup.AddEntry(pe, true);
+				pdStorage.RootGroup.AddEntry(pe, true);
 			}
 		}
 

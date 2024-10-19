@@ -28,20 +28,18 @@ namespace KeePass.Ecas
 	public abstract class EcasActionProvider
 	{
 		protected List<EcasActionType> m_actions = new List<EcasActionType>();
-
 		internal List<EcasActionType> Actions
 		{
 			get { return m_actions; }
 		}
 
-		public bool IsSupported(PwUuid uuidType)
+		public bool IsSupported(PwUuid puType)
 		{
-			if(uuidType == null) throw new ArgumentNullException("uuidType");
+			if(puType == null) throw new ArgumentNullException("puType");
 
 			foreach(EcasActionType t in m_actions)
 			{
-				if(t.Type.Equals(uuidType))
-					return true;
+				if(t.Type.Equals(puType)) return true;
 			}
 
 			return false;
@@ -59,13 +57,13 @@ namespace KeePass.Ecas
 			return null;
 		}
 
-		public EcasActionType Find(PwUuid uuid)
+		public EcasActionType Find(PwUuid puType)
 		{
-			if(uuid == null) throw new ArgumentNullException("uuid");
+			if(puType == null) throw new ArgumentNullException("puType");
 
 			foreach(EcasActionType t in m_actions)
 			{
-				if(t.Type.Equals(uuid)) return t;
+				if(t.Type.Equals(puType)) return t;
 			}
 
 			return null;

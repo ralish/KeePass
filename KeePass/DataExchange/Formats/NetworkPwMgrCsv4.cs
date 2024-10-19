@@ -27,7 +27,7 @@ using KeePass.Resources;
 
 using KeePassLib;
 using KeePassLib.Interfaces;
-using KeePassLib.Security;
+using KeePassLib.Utility;
 
 namespace KeePass.DataExchange.Formats
 {
@@ -41,19 +41,17 @@ namespace KeePass.DataExchange.Formats
 		public override string DefaultExtension { get { return "csv"; } }
 		public override string ApplicationGroup { get { return KPRes.PasswordManagers; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			StreamReader sr = new StreamReader(sInput, Encoding.Default);
-			string strData = sr.ReadToEnd();
-			sr.Close();
+			string strData = MemUtil.ReadString(sInput, Encoding.Default);
 
 			CsvOptions opt = new CsvOptions();
 			opt.BackslashIsEscape = false;
 			opt.TextQualifier = char.MaxValue; // No text qualifier
 
 			CsvStreamReaderEx csv = new CsvStreamReaderEx(strData, opt);
-			PwGroup pg = pwStorage.RootGroup;
+			PwGroup pg = pdStorage.RootGroup;
 			char[] vGroupSplit = new char[] { '\\' };
 
 			while(true)
@@ -70,7 +68,7 @@ namespace KeePass.DataExchange.Formats
 					string strGroup = v[0].Trim(vGroupSplit); // Also from end
 					if(strGroup.Length > 0)
 					{
-						pg = pwStorage.RootGroup.FindCreateSubTree(strGroup,
+						pg = pdStorage.RootGroup.FindCreateSubTree(strGroup,
 							vGroupSplit);
 
 						if(v.Length >= 6) pg.Notes = v[5].Trim();
@@ -95,18 +93,18 @@ namespace KeePass.DataExchange.Formats
 						l.Add(string.Empty);
 					}
 
-					ImportUtil.AppendToField(pe, PwDefs.TitleField, l[0], pwStorage);
-					ImportUtil.AppendToField(pe, PwDefs.UserNameField, l[1], pwStorage);
-					ImportUtil.AppendToField(pe, PwDefs.PasswordField, l[2], pwStorage);
-					ImportUtil.AppendToField(pe, PwDefs.UrlField, l[3], pwStorage);
-					ImportUtil.AppendToField(pe, PwDefs.NotesField, l[4], pwStorage);
+					ImportUtil.Add(pe, PwDefs.TitleField, l[0], pdStorage);
+					ImportUtil.Add(pe, PwDefs.UserNameField, l[1], pdStorage);
+					ImportUtil.Add(pe, PwDefs.PasswordField, l[2], pdStorage);
+					ImportUtil.Add(pe, PwDefs.UrlField, l[3], pdStorage);
+					ImportUtil.Add(pe, PwDefs.NotesField, l[4], pdStorage);
 
 					if(l[5].Length > 0)
-						ImportUtil.AppendToField(pe, "Custom 1", l[5], pwStorage);
+						ImportUtil.Add(pe, "Custom 1", l[5], pdStorage);
 					if(l[6].Length > 0)
-						ImportUtil.AppendToField(pe, "Custom 2", l[6], pwStorage);
+						ImportUtil.Add(pe, "Custom 2", l[6], pdStorage);
 					if(l[7].Length > 0)
-						ImportUtil.AppendToField(pe, "Custom 3", l[7], pwStorage);
+						ImportUtil.Add(pe, "Custom 3", l[7], pdStorage);
 				}
 			}
 		}

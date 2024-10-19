@@ -28,20 +28,18 @@ namespace KeePass.Ecas
 	public abstract class EcasConditionProvider
 	{
 		protected List<EcasConditionType> m_conditions = new List<EcasConditionType>();
-
 		internal List<EcasConditionType> Conditions
 		{
 			get { return m_conditions; }
 		}
 
-		public bool IsSupported(PwUuid uuidType)
+		public bool IsSupported(PwUuid puType)
 		{
-			if(uuidType == null) throw new ArgumentNullException("uuidType");
+			if(puType == null) throw new ArgumentNullException("puType");
 
 			foreach(EcasConditionType t in m_conditions)
 			{
-				if(t.Type.Equals(uuidType))
-					return true;
+				if(t.Type.Equals(puType)) return true;
 			}
 
 			return false;
@@ -59,13 +57,13 @@ namespace KeePass.Ecas
 			return null;
 		}
 
-		public EcasConditionType Find(PwUuid uuid)
+		public EcasConditionType Find(PwUuid puType)
 		{
-			if(uuid == null) throw new ArgumentNullException("uuid");
+			if(puType == null) throw new ArgumentNullException("puType");
 
 			foreach(EcasConditionType t in m_conditions)
 			{
-				if(t.Type.Equals(uuid)) return t;
+				if(t.Type.Equals(puType)) return t;
 			}
 
 			return null;

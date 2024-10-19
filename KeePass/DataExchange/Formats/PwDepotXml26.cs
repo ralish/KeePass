@@ -48,20 +48,17 @@ namespace KeePass.DataExchange.Formats
 		public override string DefaultExtension { get { return "xml"; } }
 		public override string ApplicationGroup { get { return KPRes.PasswordManagers; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			StreamReader sr = new StreamReader(sInput, StrUtil.Utf8, true);
-			string strData = sr.ReadToEnd();
-			sr.Close();
+			string strData = MemUtil.ReadString(sInput, StrUtil.Utf8);
 
 			// Remove vertical tabulators
 			strData = strData.Replace("\u000B", string.Empty);
 
-			XmlDocument xd = XmlUtilEx.CreateXmlDocument();
-			xd.LoadXml(strData);
+			XmlDocument xd = XmlUtilEx.LoadXmlDocumentFromString(strData);
 
-			PwGroup pgRoot = pwStorage.RootGroup;
+			PwGroup pgRoot = pdStorage.RootGroup;
 			Dictionary<string, IStructureItem> dItems = new Dictionary<string, IStructureItem>();
 			string strFavs = null;
 
@@ -70,13 +67,13 @@ namespace KeePass.DataExchange.Formats
 				string strName = xn.Name.ToLowerInvariant();
 
 				if(strName == "passwords")
-					ReadContainer(xn, pgRoot, pwStorage, dItems);
+					ReadContainer(xn, pgRoot, pdStorage, dItems);
 				else if(strName == "recyclebin")
 				{
 					PwGroup pg = new PwGroup(true, true, KPRes.RecycleBin +
 						" (Password Depot)", PwIcon.TrashBin);
 					pgRoot.AddGroup(pg, true);
-					ReadContainer(xn, pg, pwStorage, dItems);
+					ReadContainer(xn, pg, pdStorage, dItems);
 				}
 				else if(strName == "favorites")
 					strFavs = XmlUtil.SafeInnerText(xn).Trim();
@@ -166,20 +163,15 @@ namespace KeePass.DataExchange.Formats
 				string strName = xn.Name.ToLowerInvariant();
 
 				if(strName == "description")
-					ImportUtil.AppendToField(pe, PwDefs.TitleField,
-						XmlUtil.SafeInnerText(xn), pd);
+					ImportUtil.Add(pe, PwDefs.TitleField, xn, pd);
 				else if(strName == "username")
-					ImportUtil.AppendToField(pe, PwDefs.UserNameField,
-						XmlUtil.SafeInnerText(xn), pd);
+					ImportUtil.Add(pe, PwDefs.UserNameField, xn, pd);
 				else if(strName == "password")
-					ImportUtil.AppendToField(pe, PwDefs.PasswordField,
-						XmlUtil.SafeInnerText(xn), pd);
+					ImportUtil.Add(pe, PwDefs.PasswordField, xn, pd);
 				else if(strName == "url")
-					ImportUtil.CreateFieldWithIndex(pe.Strings, PwDefs.UrlField,
-						XmlUtil.SafeInnerText(xn), pd, false);
+					ImportUtil.Add(pe, PwDefs.UrlField, xn, pd);
 				else if(strName == "comment")
-					ImportUtil.AppendToField(pe, PwDefs.NotesField,
-						XmlUtil.SafeInnerText(xn), pd);
+					ImportUtil.Add(pe, PwDefs.NotesField, xn, pd);
 				else if(strName == "expirydate")
 				{
 					DateTime? odt = ReadTime(xn);
@@ -243,8 +235,7 @@ namespace KeePass.DataExchange.Formats
 				string strName = xn.Name.ToLowerInvariant();
 
 				if(strName == "url")
-					ImportUtil.CreateFieldWithIndex(pe.Strings, PwDefs.UrlField,
-						XmlUtil.SafeInnerText(xn), pd, false);
+					ImportUtil.Add(pe, PwDefs.UrlField, xn, pd);
 				else { Debug.Assert(false); }
 			}
 		}

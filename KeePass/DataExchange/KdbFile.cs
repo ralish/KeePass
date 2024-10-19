@@ -172,7 +172,7 @@ namespace KeePass.DataExchange
 
 				pg.Name = g.Name;
 				pg.IconId = (g.ImageId < (uint)PwIcon.Count) ? (PwIcon)g.ImageId : PwIcon.Folder;
-				
+
 				pg.CreationTime = g.CreationTime.ToDateTime();
 				pg.LastModificationTime = g.LastModificationTime.ToDateTime();
 				pg.LastAccessTime = g.LastAccessTime.ToDateTime();
@@ -219,20 +219,15 @@ namespace KeePass.DataExchange
 
 				pe.IconId = (e.ImageId < (uint)PwIcon.Count) ? (PwIcon)e.ImageId : PwIcon.Key;
 
-				pe.Strings.Set(PwDefs.TitleField, new ProtectedString(
-					m_pwDatabase.MemoryProtection.ProtectTitle, e.Title));
-				pe.Strings.Set(PwDefs.UserNameField, new ProtectedString(
-					m_pwDatabase.MemoryProtection.ProtectUserName, e.UserName));
-				pe.Strings.Set(PwDefs.PasswordField, new ProtectedString(
-					m_pwDatabase.MemoryProtection.ProtectPassword, e.Password));
-				pe.Strings.Set(PwDefs.UrlField, new ProtectedString(
-					m_pwDatabase.MemoryProtection.ProtectUrl, e.Url));
+				ImportUtil.Add(pe, PwDefs.TitleField, e.Title, m_pwDatabase);
+				ImportUtil.Add(pe, PwDefs.UserNameField, e.UserName, m_pwDatabase);
+				ImportUtil.Add(pe, PwDefs.PasswordField, e.Password, m_pwDatabase);
+				ImportUtil.Add(pe, PwDefs.UrlField, e.Url, m_pwDatabase);
 
 				string strNotes = e.Additional;
 				ImportAutoType(ref strNotes, pe);
 				ImportUrlOverride(ref strNotes, pe);
-				pe.Strings.Set(PwDefs.NotesField, new ProtectedString(
-					m_pwDatabase.MemoryProtection.ProtectNotes, strNotes));
+				ImportUtil.Add(pe, PwDefs.NotesField, strNotes, m_pwDatabase);
 
 				pe.CreationTime = e.CreationTime.ToDateTime();
 				pe.LastModificationTime = e.LastModificationTime.ToDateTime();

@@ -29,34 +29,38 @@ namespace KeePass.Ecas
 {
 	public sealed class EcasAction : IDeepCloneable<EcasAction>, IEcasObject
 	{
-		private PwUuid m_type = PwUuid.Zero;
+		private PwUuid m_puTypeA = PwUuid.Zero;
 		[XmlIgnore]
 		public PwUuid Type
 		{
-			get { return m_type; }
-			set { m_type = value; }
+			get { return m_puTypeA; }
+			set
+			{
+				if(value == null) throw new ArgumentNullException("value");
+				m_puTypeA = value;
+			}
 		}
 
 		[XmlElement("TypeGuid")]
 		public string TypeString
 		{
-			get { return Convert.ToBase64String(m_type.UuidBytes, Base64FormattingOptions.None); }
+			get { return Convert.ToBase64String(m_puTypeA.UuidBytes); }
 			set
 			{
 				if(value == null) throw new ArgumentNullException("value");
-				m_type = new PwUuid(Convert.FromBase64String(value));
+				m_puTypeA = new PwUuid(Convert.FromBase64String(value));
 			}
 		}
 
-		private List<string> m_params = new List<string>();
+		private List<string> m_lParamsA = new List<string>();
 		[XmlArrayItem("Parameter")]
 		public List<string> Parameters
 		{
-			get { return m_params; }
+			get { return m_lParamsA; }
 			set
 			{
 				if(value == null) throw new ArgumentNullException("value");
-				m_params = value;
+				m_lParamsA = value;
 			}
 		}
 
@@ -66,14 +70,12 @@ namespace KeePass.Ecas
 
 		public EcasAction CloneDeep()
 		{
-			EcasAction e = new EcasAction();
+			EcasAction a = new EcasAction();
 
-			e.m_type = m_type; // PwUuid is immutable
+			a.m_puTypeA = m_puTypeA; // PwUuid is immutable
+			a.m_lParamsA.AddRange(m_lParamsA);
 
-			for(int i = 0; i < m_params.Count; ++i)
-				e.m_params.Add(m_params[i]);
-
-			return e;
+			return a;
 		}
 	}
 }

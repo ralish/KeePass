@@ -44,16 +44,12 @@ namespace KeePass.DataExchange.Formats
 		public override string DefaultExtension { get { return "xml"; } }
 		public override string ApplicationGroup { get { return KPRes.PasswordManagers; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			using(StreamReader sr = new StreamReader(sInput, Encoding.UTF8, true))
-			{
-				XmlDocument d = XmlUtilEx.CreateXmlDocument();
-				d.LoadXml(sr.ReadToEnd());
+			XmlDocument xd = XmlUtilEx.LoadXmlDocument(sInput, StrUtil.Utf8);
 
-				ImportGroup(d.DocumentElement, pwStorage.RootGroup, pwStorage);
-			}
+			ImportGroup(xd.DocumentElement, pdStorage.RootGroup, pdStorage);
 		}
 
 		private static void ImportGroup(XmlNode xnFolder, PwGroup pg, PwDatabase pd)
@@ -96,18 +92,15 @@ namespace KeePass.DataExchange.Formats
 				switch(xn.Name)
 				{
 					case "name":
-						ImportUtil.AppendToField(pe, PwDefs.TitleField,
-							XmlUtil.SafeInnerText(xn), pd);
+						ImportUtil.Add(pe, PwDefs.TitleField, xn, pd);
 						break;
 
 					case "username":
-						ImportUtil.AppendToField(pe, PwDefs.UserNameField,
-							XmlUtil.SafeInnerText(xn), pd);
+						ImportUtil.Add(pe, PwDefs.UserNameField, xn, pd);
 						break;
 
 					case "password":
-						ImportUtil.AppendToField(pe, PwDefs.PasswordField,
-							XmlUtil.SafeInnerText(xn), pd);
+						ImportUtil.Add(pe, PwDefs.PasswordField, xn, pd);
 						break;
 
 					case "link":
@@ -124,13 +117,11 @@ namespace KeePass.DataExchange.Formats
 
 						if(strType == "mail") strUrl = "mailto:" + strUrl;
 
-						ImportUtil.CreateFieldWithIndex(pe.Strings, strName,
-							strUrl, pd, false);
+						ImportUtil.Add(pe, strName, strUrl, pd);
 						break;
 
 					case "note":
-						ImportUtil.AppendToField(pe, PwDefs.NotesField,
-							XmlUtil.SafeInnerText(xn), pd);
+						ImportUtil.Add(pe, PwDefs.NotesField, xn, pd);
 						break;
 
 					case "created":

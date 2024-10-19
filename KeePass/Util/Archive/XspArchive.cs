@@ -63,76 +63,75 @@ namespace KeePass.Util.Archive
 
 		private static void CreateFilePriv(string strFile, string strSourceDir)
 		{
-			FileStream fsOut = new FileStream(strFile, FileMode.Create,
-				FileAccess.Write, FileShare.None);
-			BinaryWriter bwOut = new BinaryWriter(fsOut);
-			try
+			using(FileStream fsOut = new FileStream(strFile, FileMode.Create,
+				FileAccess.Write, FileShare.None))
 			{
-				bwOut.Write(g_uSig);
-				bwOut.Write(g_uVer);
-
-				string[] vFiles = Directory.GetFiles(strSourceDir, "*.*",
-					SearchOption.AllDirectories);
-				foreach(string str in vFiles)
+				using(BinaryWriter bwOut = new BinaryWriter(fsOut))
 				{
-					if(string.IsNullOrEmpty(str)) { Debug.Assert(false); continue; }
-					if(str.EndsWith("\"")) { Debug.Assert(false); continue; }
-					if(str.EndsWith(".")) { Debug.Assert(false); continue; }
+					bwOut.Write(g_uSig);
+					bwOut.Write(g_uVer);
 
-					byte[] pbData = File.ReadAllBytes(str);
-					if(pbData.LongLength > int.MaxValue)
-						throw new OutOfMemoryException();
-					int cbData = pbData.Length;
+					string[] vFiles = Directory.GetFiles(strSourceDir, "*",
+						SearchOption.AllDirectories);
+					foreach(string str in vFiles)
+					{
+						if(string.IsNullOrEmpty(str)) { Debug.Assert(false); continue; }
+						if(str.EndsWith("\"")) { Debug.Assert(false); continue; }
+						if(str.EndsWith(".")) { Debug.Assert(false); continue; }
 
-					string strName = UrlUtil.GetFileName(str);
-					byte[] pbName = StrUtil.Utf8.GetBytes(strName);
-					if(pbName.LongLength > int.MaxValue)
-						throw new OutOfMemoryException();
-					int cbName = pbName.Length;
+						byte[] pbData = File.ReadAllBytes(str);
+						if(pbData.LongLength > int.MaxValue)
+							throw new OutOfMemoryException();
+						int cbData = pbData.Length;
 
-					bwOut.Write(cbName);
-					bwOut.Write(pbName);
+						string strName = UrlUtil.GetFileName(str);
+						byte[] pbName = StrUtil.Utf8.GetBytes(strName);
+						if(pbName.LongLength > int.MaxValue)
+							throw new OutOfMemoryException();
+						int cbName = pbName.Length;
 
-					bwOut.Write(cbData);
-					bwOut.Write(pbData);
+						bwOut.Write(cbName);
+						bwOut.Write(pbName);
+
+						bwOut.Write(cbData);
+						bwOut.Write(pbData);
+					}
+
+					bwOut.Write((int)0);
 				}
-
-				const int iTerm = 0;
-				bwOut.Write(iTerm);
 			}
-			finally { bwOut.Close(); fsOut.Close(); }
 		}
 
 		public void Load(byte[] pbFile)
 		{
 			if(pbFile == null) throw new ArgumentNullException("pbFile");
 
-			MemoryStream ms = new MemoryStream(pbFile, false);
-			BinaryReader br = new BinaryReader(ms);
-			try
+			using(MemoryStream ms = new MemoryStream(pbFile, false))
 			{
-				ulong uSig = br.ReadUInt64();
-				if(uSig != g_uSig) throw new FormatException();
-
-				ushort uVer = br.ReadUInt16();
-				if(uVer > g_uVer) throw new FormatException();
-
-				while(true)
+				using(BinaryReader br = new BinaryReader(ms))
 				{
-					int cbName = br.ReadInt32();
-					if(cbName == 0) break;
+					ulong uSig = br.ReadUInt64();
+					if(uSig != g_uSig) throw new FormatException();
 
-					byte[] pbName = br.ReadBytes(cbName);
-					string strName = StrUtil.Utf8.GetString(pbName);
+					ushort uVer = br.ReadUInt16();
+					if(uVer > g_uVer) throw new FormatException();
 
-					int cbData = br.ReadInt32();
-					byte[] pbData = br.ReadBytes(cbData);
+					while(true)
+					{
+						int cbName = br.ReadInt32();
+						if(cbName == 0) break;
 
-					Debug.Assert(!m_dItems.ContainsKey(strName));
-					m_dItems[strName] = pbData;
+						byte[] pbName = br.ReadBytes(cbName);
+						string strName = StrUtil.Utf8.GetString(pbName);
+
+						int cbData = br.ReadInt32();
+						byte[] pbData = br.ReadBytes(cbData);
+
+						Debug.Assert(!m_dItems.ContainsKey(strName));
+						m_dItems[strName] = pbData;
+					}
 				}
 			}
-			finally { br.Close(); ms.Close(); }
 		}
 	}
 }

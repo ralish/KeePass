@@ -23,16 +23,12 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Xml;
-using System.Xml.Serialization;
 
-using KeePass.Resources;
 using KeePass.Util;
 
 using KeePassLib;
-using KeePassLib.Collections;
 using KeePassLib.Interfaces;
 using KeePassLib.Security;
-using KeePassLib.Serialization;
 using KeePassLib.Utility;
 
 namespace KeePass.DataExchange.Formats
@@ -48,42 +44,21 @@ namespace KeePass.DataExchange.Formats
 
 		public override bool SupportsUuids { get { return true; } }
 
-		private const string ElemRoot = "pwlist";
-		private const string ElemEntry = "pwentry";
-		private const string ElemGroup = "group";
-		private const string ElemTitle = "title";
-		private const string ElemUserName = "username";
-		private const string ElemUrl = "url";
-		private const string ElemPassword = "password";
-		private const string ElemNotes = "notes";
-		private const string ElemUuid = "uuid";
-		private const string ElemImage = "image";
-		private const string ElemCreationTime = "creationtime";
-		private const string ElemLastModTime = "lastmodtime";
-		private const string ElemLastAccessTime = "lastaccesstime";
-		private const string ElemExpiryTime = "expiretime";
-		private const string ElemAttachDesc = "attachdesc";
-		private const string ElemAttachment = "attachment";
-
-		private const string AttribGroupTree = "tree";
-		private const string AttribExpires = "expires";
-
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			XmlDocument xmlDoc = XmlUtilEx.CreateXmlDocument();
-			xmlDoc.Load(sInput);
+			XmlDocument xd = XmlUtilEx.LoadXmlDocument(sInput, StrUtil.Utf8);
 
-			XmlNode xmlRoot = xmlDoc.DocumentElement;
-			Debug.Assert(xmlRoot.Name == ElemRoot);
+			XmlNode xnRoot = xd.DocumentElement;
+			Debug.Assert(xnRoot.Name == "pwlist");
 
-			int nNodeCount = xmlRoot.ChildNodes.Count;
+			int nNodeCount = xnRoot.ChildNodes.Count;
 			for(int i = 0; i < nNodeCount; ++i)
 			{
-				XmlNode xmlChild = xmlRoot.ChildNodes[i];
+				XmlNode xn = xnRoot.ChildNodes[i];
 
-				if(xmlChild.Name == ElemEntry)
-					ReadEntry(xmlChild, pwStorage);
+				if(xn.Name == "pwentry")
+					ReadEntry(xn, pdStorage);
 				else { Debug.Assert(false); }
 
 				if(slLogger != null)
@@ -91,90 +66,71 @@ namespace KeePass.DataExchange.Formats
 			}
 		}
 
-		private static void ReadEntry(XmlNode xmlNode, PwDatabase pwStorage)
+		private static void ReadEntry(XmlNode xnEntry, PwDatabase pd)
 		{
 			PwEntry pe = new PwEntry(true, true);
-			PwGroup pg = pwStorage.RootGroup;
+			PwGroup pg = pd.RootGroup;
 
 			string strAttachDesc = null, strAttachment = null;
 
-			foreach(XmlNode xmlChild in xmlNode)
+			foreach(XmlNode xn in xnEntry)
 			{
-				if(xmlChild.Name == ElemGroup)
+				if(xn.Name == "group")
 				{
-					string strPreTree = null;
-					try
-					{
-						XmlNode xmlTree = xmlChild.Attributes.GetNamedItem(AttribGroupTree);
-						strPreTree = xmlTree.Value;
-					}
-					catch(Exception) { }
+					XmlNode xnTree = xn.Attributes.GetNamedItem("tree");
+					string strPreTree = ((xnTree != null) ? xnTree.Value : null);
 
-					string strLast = XmlUtil.SafeInnerText(xmlChild);
-					string strGroup = ((!string.IsNullOrEmpty(strPreTree)) ?
-						strPreTree + "\\" + strLast : strLast);
+					string strLast = XmlUtil.SafeInnerText(xn);
+					string strGroup = (string.IsNullOrEmpty(strPreTree) ?
+						strLast : (strPreTree + "\\" + strLast));
 
-					pg = pwStorage.RootGroup.FindCreateSubTree(strGroup,
+					pg = pd.RootGroup.FindCreateSubTree(strGroup,
 						new string[1] { "\\" }, true);
 				}
-				else if(xmlChild.Name == ElemTitle)
-					pe.Strings.Set(PwDefs.TitleField, new ProtectedString(
-						pwStorage.MemoryProtection.ProtectTitle,
-						XmlUtil.SafeInnerText(xmlChild)));
-				else if(xmlChild.Name == ElemUserName)
-					pe.Strings.Set(PwDefs.UserNameField, new ProtectedString(
-						pwStorage.MemoryProtection.ProtectUserName,
-						XmlUtil.SafeInnerText(xmlChild)));
-				else if(xmlChild.Name == ElemUrl)
-					pe.Strings.Set(PwDefs.UrlField, new ProtectedString(
-						pwStorage.MemoryProtection.ProtectUrl,
-						XmlUtil.SafeInnerText(xmlChild)));
-				else if(xmlChild.Name == ElemPassword)
-					pe.Strings.Set(PwDefs.PasswordField, new ProtectedString(
-						pwStorage.MemoryProtection.ProtectPassword,
-						XmlUtil.SafeInnerText(xmlChild)));
-				else if(xmlChild.Name == ElemNotes)
-					pe.Strings.Set(PwDefs.NotesField, new ProtectedString(
-						pwStorage.MemoryProtection.ProtectNotes,
-						XmlUtil.SafeInnerText(xmlChild)));
-				else if(xmlChild.Name == ElemUuid)
+				else if(xn.Name == "title")
+					ImportUtil.Add(pe, PwDefs.TitleField, xn, pd);
+				else if(xn.Name == "username")
+					ImportUtil.Add(pe, PwDefs.UserNameField, xn, pd);
+				else if(xn.Name == "url")
+					ImportUtil.Add(pe, PwDefs.UrlField, xn, pd);
+				else if(xn.Name == "password")
+					ImportUtil.Add(pe, PwDefs.PasswordField, xn, pd);
+				else if(xn.Name == "notes")
+					ImportUtil.Add(pe, PwDefs.NotesField, xn, pd);
+				else if(xn.Name == "uuid")
 					pe.SetUuid(new PwUuid(MemUtil.HexStringToByteArray(
-						XmlUtil.SafeInnerText(xmlChild))), false);
-				else if(xmlChild.Name == ElemImage)
+						XmlUtil.SafeInnerText(xn))), false);
+				else if(xn.Name == "image")
 				{
-					int nImage;
-					if(int.TryParse(XmlUtil.SafeInnerText(xmlChild), out nImage))
+					int i;
+					if(int.TryParse(XmlUtil.SafeInnerText(xn), out i))
 					{
-						if((nImage >= 0) && (nImage < (int)PwIcon.Count))
-							pe.IconId = (PwIcon)nImage;
+						if((i >= 0) && (i < (int)PwIcon.Count))
+							pe.IconId = (PwIcon)i;
 						else { Debug.Assert(false); }
 					}
 					else { Debug.Assert(false); }
 				}
-				else if(xmlChild.Name == ElemCreationTime)
-					pe.CreationTime = ParseTime(XmlUtil.SafeInnerText(xmlChild));
-				else if(xmlChild.Name == ElemLastModTime)
-					pe.LastModificationTime = ParseTime(XmlUtil.SafeInnerText(xmlChild));
-				else if(xmlChild.Name == ElemLastAccessTime)
-					pe.LastAccessTime = ParseTime(XmlUtil.SafeInnerText(xmlChild));
-				else if(xmlChild.Name == ElemExpiryTime)
+				else if(xn.Name == "creationtime")
+					pe.CreationTime = ParseTime(xn);
+				else if(xn.Name == "lastmodtime")
+					pe.LastModificationTime = ParseTime(xn);
+				else if(xn.Name == "lastaccesstime")
+					pe.LastAccessTime = ParseTime(xn);
+				else if(xn.Name == "expiretime")
 				{
-					try
+					XmlNode xnExpires = xn.Attributes.GetNamedItem("expires");
+					if((xnExpires != null) && StrUtil.StringToBool(xnExpires.Value))
 					{
-						XmlNode xmlExpires = xmlChild.Attributes.GetNamedItem(AttribExpires);
-						if(StrUtil.StringToBool(xmlExpires.Value))
-						{
-							pe.Expires = true;
-							pe.ExpiryTime = ParseTime(XmlUtil.SafeInnerText(xmlChild));
-						}
-						else { Debug.Assert(ParseTime(XmlUtil.SafeInnerText(xmlChild)).Year == 2999); }
+						pe.Expires = true;
+						pe.ExpiryTime = ParseTime(xn);
 					}
-					catch(Exception) { Debug.Assert(false); }
+					else { Debug.Assert(ParseTime(xn).Year == 2999); }
 				}
-				else if(xmlChild.Name == ElemAttachDesc)
-					strAttachDesc = XmlUtil.SafeInnerText(xmlChild);
-				else if(xmlChild.Name == ElemAttachment)
-					strAttachment = XmlUtil.SafeInnerText(xmlChild);
+				else if(xn.Name == "attachdesc")
+					strAttachDesc = XmlUtil.SafeInnerText(xn);
+				else if(xn.Name == "attachment")
+					strAttachment = XmlUtil.SafeInnerText(xn);
 				else { Debug.Assert(false); }
 			}
 
@@ -188,8 +144,9 @@ namespace KeePass.DataExchange.Formats
 			pg.AddEntry(pe, true);
 		}
 
-		private static DateTime ParseTime(string str)
+		private static DateTime ParseTime(XmlNode xn)
 		{
+			string str = XmlUtil.SafeInnerText(xn);
 			if(string.IsNullOrEmpty(str)) { Debug.Assert(false); return DateTime.UtcNow; }
 			if(str == "0000-00-00T00:00:00") return DateTime.UtcNow;
 

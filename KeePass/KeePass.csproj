@@ -465,7 +465,6 @@
     <Compile Include="DataExchange\Formats\RoboFormHtml69.cs" />
     <Compile Include="DataExchange\Formats\SafeWalletXml3.cs" />
     <Compile Include="DataExchange\Formats\SecurityTxt12.cs" />
-    <Compile Include="DataExchange\Formats\Spamex20070328.cs" />
     <Compile Include="DataExchange\Formats\SplashIdCsv402.cs" />
     <Compile Include="DataExchange\Formats\SteganosCsv20.cs" />
     <Compile Include="DataExchange\Formats\SteganosUI2007.cs" />
@@ -911,6 +910,7 @@
     </Compile>
     <Compile Include="UI\TaskbarList.cs" />
     <Compile Include="UI\ToolStripRendering\ProExtTsr.cs" />
+    <Compile Include="UI\ToolStripRendering\SimpleColorTableEx.cs" />
     <Compile Include="UI\ToolStripRendering\SystemTsr.cs" />
     <Compile Include="UI\ToolStripRendering\TsrFactory.cs" />
     <Compile Include="UI\ToolStripRendering\KeePassTsr.cs" />
@@ -1203,6 +1203,7 @@
     <Compile Include="Util\NetUtil.cs" />
     <Compile Include="Util\PrintUtil.cs" />
     <Compile Include="Util\PwGeneratorUtil.cs" />
+    <Compile Include="Util\RegUtil.cs" />
     <Compile Include="Util\SearchUtil.cs" />
     <Compile Include="Util\SendInputEx.cs" />
     <Compile Include="Util\SendInputExt\ISiEngine.cs" />
@@ -1228,7 +1229,7 @@
     <Compile Include="Util\TextSimilarity.cs" />
     <Compile Include="Util\UpdateCheckEx.cs" />
     <Compile Include="Util\WinUtil.cs" />
-    <Compile Include="Util\XmlSerialization\XmlSerializerEx.Gen.cs" />
+    <Compile Include="Util\XmlSerialization\XmlSerializerEx.Generated.cs" />
     <Compile Include="Util\XmlUtil.cs" />
     <Compile Include="Util\XmlSerialization\XmlSerializerEx.cs" />
     <Compile Include="Util\XmlUtil.Merge.cs" />

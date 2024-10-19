@@ -20,7 +20,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Text;
 
@@ -28,7 +27,7 @@ using KeePass.Resources;
 
 using KeePassLib;
 using KeePassLib.Interfaces;
-using KeePassLib.Security;
+using KeePassLib.Utility;
 
 namespace KeePass.DataExchange.Formats
 {
@@ -44,48 +43,36 @@ namespace KeePass.DataExchange.Formats
 
 		public override bool ImportAppendsToRootGroupOnly { get { return true; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			StreamReader sr = new StreamReader(sInput, Encoding.Default);
-			string strData = sr.ReadToEnd();
-			sr.Close();
+			string strData = MemUtil.ReadString(sInput, Encoding.Default);
 
 			string[] vLines = strData.Split(new char[] { '\r', '\n' });
 
 			foreach(string strLine in vLines)
 			{
-				if(strLine.Length > 5) ProcessCsvLine(strLine, pwStorage);
+				if(strLine.Length > 5) ProcessCsvLine(strLine, pdStorage);
 			}
 		}
 
-		private static void ProcessCsvLine(string strLine, PwDatabase pwStorage)
+		private static void ProcessCsvLine(string strLine, PwDatabase pd)
 		{
-			List<string> list = ImportUtil.SplitCsvLine(strLine, ",");
-			Debug.Assert(list.Count == 5);
+			List<string> l = ImportUtil.SplitCsvLine(strLine, ",");
+			if(l.Count != 5)
+			{
+				Debug.Assert(false);
+				throw new FormatException();
+			}
 
 			PwEntry pe = new PwEntry(true, true);
-			pwStorage.RootGroup.AddEntry(pe, true);
+			pd.RootGroup.AddEntry(pe, true);
 
-			if(list.Count == 5)
-			{
-				pe.Strings.Set(PwDefs.TitleField, new ProtectedString(
-					pwStorage.MemoryProtection.ProtectTitle,
-					ProcessCsvWord(list[0])));
-				pe.Strings.Set(PwDefs.UserNameField, new ProtectedString(
-					pwStorage.MemoryProtection.ProtectUserName,
-					ProcessCsvWord(list[1])));
-				pe.Strings.Set(PwDefs.PasswordField, new ProtectedString(
-					pwStorage.MemoryProtection.ProtectPassword,
-					ProcessCsvWord(list[2])));
-				pe.Strings.Set(PwDefs.UrlField, new ProtectedString(
-					pwStorage.MemoryProtection.ProtectUrl,
-					ProcessCsvWord(list[3])));
-				pe.Strings.Set(PwDefs.NotesField, new ProtectedString(
-					pwStorage.MemoryProtection.ProtectNotes,
-					ProcessCsvWord(list[4])));
-			}
-			else throw new FormatException("Invalid field count!");
+			ImportUtil.Add(pe, PwDefs.TitleField, ProcessCsvWord(l[0]), pd);
+			ImportUtil.Add(pe, PwDefs.UserNameField, ProcessCsvWord(l[1]), pd);
+			ImportUtil.Add(pe, PwDefs.PasswordField, ProcessCsvWord(l[2]), pd);
+			ImportUtil.Add(pe, PwDefs.UrlField, ProcessCsvWord(l[3]), pd);
+			ImportUtil.Add(pe, PwDefs.NotesField, ProcessCsvWord(l[4]), pd);
 		}
 
 		private static string ProcessCsvWord(string strWord)

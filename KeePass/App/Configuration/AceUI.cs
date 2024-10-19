@@ -179,6 +179,30 @@ namespace KeePass.App.Configuration
 			set { m_bShowRecycleDlg = value; }
 		}
 
+		private bool m_bShowCmdUriDlg = true;
+		[DefaultValue(true)]
+		public bool ShowCmdUriConfirmDialog
+		{
+			get { return m_bShowCmdUriDlg; }
+			set { m_bShowCmdUriDlg = value; }
+		}
+
+		private bool m_bShowCmdPlhDlg = true;
+		[DefaultValue(true)]
+		public bool ShowCmdPlhConfirmDialog
+		{
+			get { return m_bShowCmdPlhDlg; }
+			set { m_bShowCmdPlhDlg = value; }
+		}
+
+		private bool m_bShowRefPPlhDlg = true;
+		[DefaultValue(true)]
+		public bool ShowRefPPlhConfirmDialog
+		{
+			get { return m_bShowRefPPlhDlg; }
+			set { m_bShowRefPPlhDlg = value; }
+		}
+
 		private bool m_bShowDbMntncResDlg = true;
 		[DefaultValue(true)]
 		public bool ShowDbMntncResultsDialog

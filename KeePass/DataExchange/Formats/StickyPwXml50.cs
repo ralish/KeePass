@@ -46,7 +46,7 @@ namespace KeePass.DataExchange.Formats
 		public override string DefaultExtension { get { return "xml"; } }
 		public override string ApplicationGroup { get { return KPRes.PasswordManagers; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
 			using(XmlReader xr = XmlUtilEx.CreateXmlReader(sInput))
@@ -54,10 +54,10 @@ namespace KeePass.DataExchange.Formats
 				XPathDocument xpDoc = new XPathDocument(xr);
 				XPathNavigator xpNav = xpDoc.CreateNavigator();
 
-				Dictionary<string, PwGroup> dGroups = ImportGroups(xpNav, pwStorage);
+				Dictionary<string, PwGroup> dGroups = ImportGroups(xpNav, pdStorage);
 
-				ImportLogins(xpNav, dGroups, pwStorage);
-				ImportMemos(xpNav, dGroups, pwStorage);
+				ImportLogins(xpNav, dGroups, pdStorage);
+				ImportMemos(xpNav, dGroups, pdStorage);
 			}
 		}
 
@@ -126,12 +126,10 @@ namespace KeePass.DataExchange.Formats
 				XPathNavigator xpLogin = it.Current;
 				PwEntry pe = new PwEntry(true, true);
 
-				pe.Strings.Set(PwDefs.UserNameField, new ProtectedString(
-					pd.MemoryProtection.ProtectUserName,
-					xpLogin.GetAttribute("Name", string.Empty)));
-				pe.Strings.Set(PwDefs.PasswordField, new ProtectedString(
-					pd.MemoryProtection.ProtectPassword,
-					xpLogin.GetAttribute("Password", string.Empty)));
+				ImportUtil.Add(pe, PwDefs.UserNameField,
+					xpLogin.GetAttribute("Name", string.Empty), pd);
+				ImportUtil.Add(pe, PwDefs.PasswordField,
+					xpLogin.GetAttribute("Password", string.Empty), pd);
 
 				ImportTimes(xpLogin, pe);
 
@@ -146,17 +144,14 @@ namespace KeePass.DataExchange.Formats
 				{
 					Debug.Assert(xpAccLogin.Name == "Account");
 
-					pe.Strings.Set(PwDefs.TitleField, new ProtectedString(
-						pd.MemoryProtection.ProtectTitle,
-						xpAccLogin.GetAttribute("Name", string.Empty)));
-					pe.Strings.Set(PwDefs.UrlField, new ProtectedString(
-						pd.MemoryProtection.ProtectUrl,
-						xpAccLogin.GetAttribute("Link", string.Empty)));
+					ImportUtil.Add(pe, PwDefs.TitleField,
+						xpAccLogin.GetAttribute("Name", string.Empty), pd);
+					ImportUtil.Add(pe, PwDefs.UrlField,
+						xpAccLogin.GetAttribute("Link", string.Empty), pd);
 
 					string strNotes = xpAccLogin.GetAttribute("Comments", string.Empty);
-					strNotes = strNotes.Replace("/n", Environment.NewLine);
-					pe.Strings.Set(PwDefs.NotesField, new ProtectedString(
-						pd.MemoryProtection.ProtectNotes, strNotes));
+					strNotes = strNotes.Replace("/n", MessageService.NewLine);
+					ImportUtil.Add(pe, PwDefs.NotesField, strNotes, pd);
 				}
 
 				AddToParent(xpAccLogin, pe, dGroups);
@@ -174,9 +169,8 @@ namespace KeePass.DataExchange.Formats
 
 				pe.IconId = PwIcon.PaperNew;
 
-				pe.Strings.Set(PwDefs.TitleField, new ProtectedString(
-					pd.MemoryProtection.ProtectTitle,
-					xpMemo.GetAttribute("Name", string.Empty)));
+				ImportUtil.Add(pe, PwDefs.TitleField,
+					xpMemo.GetAttribute("Name", string.Empty), pd);
 
 				ImportTimes(xpMemo, pe);
 

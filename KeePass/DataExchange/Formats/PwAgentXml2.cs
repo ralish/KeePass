@@ -20,14 +20,12 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Text;
 using System.Xml;
 
 using KeePass.Util;
 
 using KeePassLib;
-using KeePassLib.Security;
 using KeePassLib.Utility;
 
 namespace KeePass.DataExchange.Formats
@@ -36,97 +34,69 @@ namespace KeePass.DataExchange.Formats
 	internal static class PwAgentXml2
 	{
 		private const string ElemGroup = "group";
-		private const string ElemGroupName = "name";
 
-		private const string ElemEntry = "entry";
-		private const string ElemEntryName = "name";
-		private const string ElemEntryType = "type";
-		private const string ElemEntryUser = "account";
-		private const string ElemEntryPassword = "password";
-		private const string ElemEntryURL = "link";
-		private const string ElemEntryNotes = "note";
-		private const string ElemEntryCreationTime = "date_added";
-		private const string ElemEntryLastModTime = "date_modified";
-		private const string ElemEntryExpireTime = "date_expire";
-
-		internal static void Import(PwDatabase pwStorage, XmlDocument d)
+		internal static void Import(PwDatabase pd, XmlDocument d)
 		{
-			XmlNode xmlRoot = d.DocumentElement;
-			Debug.Assert(xmlRoot.Name == "data");
+			XmlNode xnRoot = d.DocumentElement;
+			Debug.Assert(xnRoot.Name == "data");
 
-			foreach(XmlNode xmlChild in xmlRoot.ChildNodes)
+			foreach(XmlNode xn in xnRoot.ChildNodes)
 			{
-				if(xmlChild.Name == ElemGroup)
-					ReadGroup(xmlChild, pwStorage.RootGroup, pwStorage);
+				if(xn.Name == ElemGroup)
+					ReadGroup(xn, pd.RootGroup, pd);
 				else { Debug.Assert(false); }
 			}
 		}
 
-		private static void ReadGroup(XmlNode xmlNode, PwGroup pgParent, PwDatabase pwStorage)
+		private static void ReadGroup(XmlNode xnGroup, PwGroup pgParent, PwDatabase pd)
 		{
 			PwGroup pg = new PwGroup(true, true);
 			pgParent.AddGroup(pg, true);
 
-			foreach(XmlNode xmlChild in xmlNode)
+			foreach(XmlNode xn in xnGroup)
 			{
-				if(xmlChild.Name == ElemGroupName)
-					pg.Name = XmlUtil.SafeInnerText(xmlChild);
-				else if(xmlChild.Name == ElemGroup)
-					ReadGroup(xmlChild, pg, pwStorage);
-				else if(xmlChild.Name == ElemEntry)
-					ReadEntry(xmlChild, pg, pwStorage);
+				if(xn.Name == "name")
+					pg.Name = XmlUtil.SafeInnerText(xn);
+				else if(xn.Name == ElemGroup)
+					ReadGroup(xn, pg, pd);
+				else if(xn.Name == "entry")
+					ReadEntry(xn, pg, pd);
 				else { Debug.Assert(false); }
 			}
 		}
 
-		private static void ReadEntry(XmlNode xmlNode, PwGroup pgParent, PwDatabase pwStorage)
+		private static void ReadEntry(XmlNode xnEntry, PwGroup pgParent, PwDatabase pd)
 		{
 			PwEntry pe = new PwEntry(true, true);
 			pgParent.AddEntry(pe, true);
 
 			DateTime dt;
-			foreach(XmlNode xmlChild in xmlNode)
+			foreach(XmlNode xn in xnEntry)
 			{
-				if(xmlChild.Name == ElemEntryName)
-					pe.Strings.Set(PwDefs.TitleField, new ProtectedString(
-						pwStorage.MemoryProtection.ProtectTitle,
-						XmlUtil.SafeInnerText(xmlChild)));
-				else if(xmlChild.Name == ElemEntryType)
-					pe.IconId = ((XmlUtil.SafeInnerText(xmlChild) != "1") ?
+				if(xn.Name == "name")
+					ImportUtil.Add(pe, PwDefs.TitleField, xn, pd);
+				else if(xn.Name == "type")
+					pe.IconId = ((XmlUtil.SafeInnerText(xn) != "1") ?
 						PwIcon.Key : PwIcon.PaperNew);
-				else if(xmlChild.Name == ElemEntryUser)
-					pe.Strings.Set(PwDefs.UserNameField, new ProtectedString(
-						pwStorage.MemoryProtection.ProtectUserName,
-						XmlUtil.SafeInnerText(xmlChild)));
-				else if(xmlChild.Name == ElemEntryPassword)
-					pe.Strings.Set(PwDefs.PasswordField, new ProtectedString(
-						pwStorage.MemoryProtection.ProtectPassword,
-						XmlUtil.SafeInnerText(xmlChild)));
-				else if(xmlChild.Name == ElemEntryURL)
-					pe.Strings.Set(PwDefs.UrlField, new ProtectedString(
-						pwStorage.MemoryProtection.ProtectUrl,
-						XmlUtil.SafeInnerText(xmlChild)));
-				else if(xmlChild.Name == ElemEntryNotes)
-					pe.Strings.Set(PwDefs.NotesField, new ProtectedString(
-						pwStorage.MemoryProtection.ProtectNotes,
-						XmlUtil.SafeInnerText(xmlChild)));
-				else if(xmlChild.Name == ElemEntryCreationTime)
+				else if(xn.Name == "account")
+					ImportUtil.Add(pe, PwDefs.UserNameField, xn, pd);
+				else if(xn.Name == "password")
+					ImportUtil.Add(pe, PwDefs.PasswordField, xn, pd);
+				else if(xn.Name == "link")
+					ImportUtil.Add(pe, PwDefs.UrlField, xn, pd);
+				else if(xn.Name == "note")
+					ImportUtil.Add(pe, PwDefs.NotesField, xn, pd);
+				else if(xn.Name == "date_added")
 				{
-					if(ParseDate(xmlChild, out dt))
-						pe.CreationTime = dt;
+					if(ParseDate(xn, out dt)) pe.CreationTime = dt;
 				}
-				else if(xmlChild.Name == ElemEntryLastModTime)
+				else if(xn.Name == "date_modified")
 				{
-					if(ParseDate(xmlChild, out dt))
-						pe.LastModificationTime = dt;
+					if(ParseDate(xn, out dt)) pe.LastModificationTime = dt;
 				}
-				else if(xmlChild.Name == ElemEntryExpireTime)
+				else if(xn.Name == "date_expire")
 				{
-					if(ParseDate(xmlChild, out dt))
-					{
-						pe.ExpiryTime = dt;
-						pe.Expires = true;
-					}
+					if(ParseDate(xn, out dt)) { pe.ExpiryTime = dt; pe.Expires = true; }
 				}
 				else { Debug.Assert(false); }
 			}
@@ -137,7 +107,7 @@ namespace KeePass.DataExchange.Formats
 			string strDate = XmlUtil.SafeInnerText(xn);
 			if(strDate.Length == 0)
 			{
-				dtOut = DateTime.UtcNow;
+				dtOut = default(DateTime);
 				return false;
 			}
 
@@ -148,7 +118,6 @@ namespace KeePass.DataExchange.Formats
 			}
 
 			Debug.Assert(false);
-			dtOut = DateTime.UtcNow;
 			return false;
 		}
 	}

@@ -45,7 +45,7 @@ namespace KeePass.DataExchange.Formats
 		public override string DefaultExtension { get { return "1pux"; } }
 		public override string ApplicationGroup { get { return KPRes.PasswordManagers; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
 			using(ZipArchiveEx za = new ZipArchiveEx(sInput))
@@ -54,16 +54,12 @@ namespace KeePass.DataExchange.Formats
 				using(Stream s = za.OpenEntry("export.data"))
 				{
 					if(s == null) throw new FormatException();
-
-					using(StreamReader sr = new StreamReader(s, StrUtil.Utf8, true))
-					{
-						str = sr.ReadToEnd();
-					}
+					str = MemUtil.ReadString(s, StrUtil.Utf8);
 				}
 
 				CharStream cs = new CharStream(str);
 				JsonObject jo = new JsonObject(cs);
-				ImportRoot(jo, za, pwStorage);
+				ImportRoot(jo, za, pdStorage);
 			}
 		}
 

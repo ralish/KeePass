@@ -46,12 +46,10 @@ namespace KeePass.DataExchange.Formats
 
 		public override bool ImportAppendsToRootGroupOnly { get { return true; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			StreamReader sr = new StreamReader(sInput, Encoding.Unicode);
-			string strData = sr.ReadToEnd();
-			sr.Close();
+			string strData = MemUtil.ReadString(sInput, Encoding.Unicode);
 
 			string[] vLines = strData.Split(new char[] { '\r', '\n' });
 
@@ -71,15 +69,14 @@ namespace KeePass.DataExchange.Formats
 					bInnerSep = !bInnerSep;
 					if(bInnerSep && !bEmptyEntry)
 					{
-						pwStorage.RootGroup.AddEntry(pe, true);
+						pdStorage.RootGroup.AddEntry(pe, true);
 
 						pe = new PwEntry(true, true);
 						bEmptyEntry = true;
 					}
 					else if(!bInnerSep)
 						pe.Strings.Set(PwDefs.TitleField, new ProtectedString(
-							pwStorage.MemoryProtection.ProtectTitle,
-							strLastLine));
+							pdStorage.MemoryProtection.ProtectTitle, strLastLine));
 
 					bDoImport = true;
 				}

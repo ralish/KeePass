@@ -269,6 +269,18 @@ namespace KeePass.UI
 			set { m_cfg.pszExpandedInformation = value; }
 		}
 
+		public string ExpandedControlText
+		{
+			get { return m_cfg.pszExpandedControlText; }
+			set { m_cfg.pszExpandedControlText = value; }
+		}
+
+		public string CollapsedControlText
+		{
+			get { return m_cfg.pszCollapsedControlText; }
+			set { m_cfg.pszCollapsedControlText = value; }
+		}
+
 		public bool ExpandedByDefault
 		{
 			get { return ((m_cfg.dwFlags & VtdFlags.ExpandedByDefault) != VtdFlags.None); }
@@ -434,10 +446,6 @@ namespace KeePass.UI
 					m_cfg.hwndParent = IntPtr.Zero;
 				}
 			}
-
-			bool bExp = (m_cfg.pszExpandedInformation != null);
-			m_cfg.pszExpandedControlText = (bExp ? KPRes.Details : null);
-			m_cfg.pszCollapsedControlText = (bExp ? KPRes.Details : null);
 
 			int pnButton = 0, pnRadioButton = 0;
 			bool bVerification = false;

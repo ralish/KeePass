@@ -75,6 +75,9 @@ namespace KeePass.UI.ToolStripRendering
 			get { return true; }
 		}
 
+		internal Color MenuItemSelectedDisabledBackgroundColor { get; set; }
+		internal Color MenuItemSelectedDisabledBorderColor { get; set; }
+
 		public ProExtTsr() : base()
 		{
 			m_bCustomColorTable = false;
@@ -246,49 +249,77 @@ namespace KeePass.UI.ToolStripRendering
 
 		protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
 		{
-			if(e != null)
+			ToolStripItem tsi = ((e != null) ? e.Item : null);
+
+			// In high contrast mode, various colors of the default
+			// color table are incorrect, thus check m_bCustomColorTable
+			if((tsi != null) && this.EnsureTextContrast && m_bCustomColorTable)
 			{
-				ToolStripItem tsi = e.Item;
-
-				// In high contrast mode, various colors of the default
-				// color table are incorrect, thus check m_bCustomColorTable
-				if((tsi != null) && this.EnsureTextContrast && m_bCustomColorTable)
+				bool bDarkBack = this.IsDarkStyle;
+				if(tsi.Selected || tsi.Pressed)
 				{
-					bool bDarkBack = this.IsDarkStyle;
-					if(tsi.Selected || tsi.Pressed)
+					if((tsi.Owner is ContextMenuStrip) || (tsi.OwnerItem != null))
+						bDarkBack = UIUtil.IsDarkColor(this.ColorTable.MenuItemSelected);
+					else // Top menu item
 					{
-						if((tsi.Owner is ContextMenuStrip) || (tsi.OwnerItem != null))
-							bDarkBack = UIUtil.IsDarkColor(this.ColorTable.MenuItemSelected);
-						else // Top menu item
-						{
-							if(tsi.Pressed)
-								bDarkBack = UIUtil.IsDarkColor(
-									this.ColorTable.MenuItemPressedGradientMiddle);
-							else
-								bDarkBack = UIUtil.IsDarkColor(UIUtil.ColorMiddle(
-									this.ColorTable.MenuItemSelectedGradientBegin,
-									this.ColorTable.MenuItemSelectedGradientEnd));
-						}
-					}
-
-					// e.TextColor might be incorrect, thus use tsi.ForeColor
-					bool bDarkText = UIUtil.IsDarkColor(tsi.ForeColor);
-
-					if(bDarkBack && bDarkText)
-					{
-						Debug.Assert(false);
-						e.TextColor = Color.White;
-					}
-					else if(!bDarkBack && !bDarkText)
-					{
-						Debug.Assert(false);
-						e.TextColor = Color.Black;
+						if(tsi.Pressed)
+							bDarkBack = UIUtil.IsDarkColor(
+								this.ColorTable.MenuItemPressedGradientMiddle);
+						else
+							bDarkBack = UIUtil.IsDarkColor(UIUtil.ColorMiddle(
+								this.ColorTable.MenuItemSelectedGradientBegin,
+								this.ColorTable.MenuItemSelectedGradientEnd));
 					}
 				}
+
+				// e.TextColor might be incorrect, thus use tsi.ForeColor
+				bool bDarkText = UIUtil.IsDarkColor(tsi.ForeColor);
+
+				if(bDarkBack && bDarkText)
+				{
+					Debug.Assert(false);
+					e.TextColor = Color.White;
+				}
+				else if(!bDarkBack && !bDarkText)
+				{
+					Debug.Assert(false);
+					e.TextColor = Color.Black;
+				}
 			}
-			else { Debug.Assert(false); }
 
 			base.OnRenderItemText(e);
+		}
+
+		protected override void OnRenderMenuItemBackground(ToolStripItemRenderEventArgs e)
+		{
+			ToolStripItem tsi = ((e != null) ? e.Item : null);
+
+			if((tsi != null) && ((tsi.Owner is ContextMenuStrip) ||
+				(tsi.OwnerItem != null)) && tsi.Selected && !tsi.Enabled &&
+				!this.MenuItemSelectedDisabledBackgroundColor.IsEmpty &&
+				!this.MenuItemSelectedDisabledBorderColor.IsEmpty)
+			{
+				Rectangle rect = tsi.ContentRectangle;
+				rect.Offset(0, -1);
+				rect.Height += 1;
+
+				Graphics g = e.Graphics;
+				if(g != null)
+				{
+					using(SolidBrush br = new SolidBrush(this.MenuItemSelectedDisabledBackgroundColor))
+					{
+						using(Pen p = new Pen(this.MenuItemSelectedDisabledBorderColor))
+						{
+							g.FillRectangle(br, rect);
+							g.DrawRectangle(p, rect);
+							return;
+						}
+					}
+				}
+				else { Debug.Assert(false); }
+			}
+
+			base.OnRenderMenuItemBackground(e);
 		}
 	}
 }

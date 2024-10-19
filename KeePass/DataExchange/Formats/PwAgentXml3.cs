@@ -47,64 +47,57 @@ namespace KeePass.DataExchange.Formats
 		public override string DefaultExtension { get { return "xml"; } }
 		public override string ApplicationGroup { get { return KPRes.PasswordManagers; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
 			byte[] pb = MemUtil.Read(sInput);
 
-			if(ImportOld(pwStorage, pb)) return;
+			if(ImportOld(pdStorage, pb)) return;
 
-			XmlDocument d = XmlUtilEx.CreateXmlDocument();
+			XmlDocument xd;
 			using(MemoryStream ms = new MemoryStream(pb, false))
 			{
-				using(StreamReader sr = new StreamReader(ms, StrUtil.Utf8, true))
-				{
-					d.Load(sr);
-				}
+				xd = XmlUtilEx.LoadXmlDocument(ms, StrUtil.Utf8);
 			}
 
-			XmlNode xmlRoot = d.DocumentElement;
-			Debug.Assert(xmlRoot.Name == "data");
+			XmlNode xnRoot = xd.DocumentElement;
+			Debug.Assert(xnRoot.Name == "data");
 
-			foreach(XmlNode xmlChild in xmlRoot.ChildNodes)
+			foreach(XmlNode xmlChild in xnRoot.ChildNodes)
 			{
 				if(xmlChild.Name == ElemGroup)
-					ReadGroup(xmlChild, pwStorage.RootGroup, pwStorage);
+					ReadGroup(xmlChild, pdStorage.RootGroup, pdStorage);
 				else if(xmlChild.Name == ElemEntry)
-					ReadEntry(xmlChild, pwStorage.RootGroup, pwStorage);
+					ReadEntry(xmlChild, pdStorage.RootGroup, pdStorage);
 				else { Debug.Assert(false); }
 			}
 		}
 
-		internal static bool ImportOld(PwDatabase pwStorage, byte[] pb)
+		internal static bool ImportOld(PwDatabase pd, byte[] pb)
 		{
 			// Version 2 uses ANSI encoding, version 3 uses UTF-8
 			// encoding (with BOM)
-			XmlDocument dAnsi = XmlUtilEx.CreateXmlDocument();
+			XmlDocument xd;
 			try
 			{
 				using(MemoryStream ms = new MemoryStream(pb, false))
 				{
-					using(StreamReader sr = new StreamReader(ms, Encoding.Default, true))
-					{
-						dAnsi.Load(sr);
-
-						XmlElement xmlRoot = dAnsi.DocumentElement;
-
-						// Version 2 has three "ver_*" attributes,
-						// version 3 has a "version" attribute
-						if(xmlRoot.Attributes["ver_major"] == null)
-							return false;
-					}
+					xd = XmlUtilEx.LoadXmlDocument(ms, Encoding.Default);
 				}
+
+				XmlElement xeRoot = xd.DocumentElement;
+
+				// Version 2 has three "ver_*" attributes,
+				// version 3 has a "version" attribute
+				if(xeRoot.Attributes["ver_major"] == null) return false;
 			}
 			catch(Exception) { Debug.Assert(false); return false; }
 
-			PwAgentXml2.Import(pwStorage, dAnsi);
+			PwAgentXml2.Import(pd, xd);
 			return true;
 		}
 
-		private static void ReadGroup(XmlNode xmlNode, PwGroup pgParent, PwDatabase pwStorage)
+		private static void ReadGroup(XmlNode xmlNode, PwGroup pgParent, PwDatabase pd)
 		{
 			PwGroup pg = new PwGroup(true, true);
 			pgParent.AddGroup(pg, true);
@@ -116,14 +109,14 @@ namespace KeePass.DataExchange.Formats
 				if(xmlChild.Name == "title")
 					pg.Name = XmlUtil.SafeInnerText(xmlChild);
 				else if(xmlChild.Name == ElemGroup)
-					ReadGroup(xmlChild, pg, pwStorage);
+					ReadGroup(xmlChild, pg, pd);
 				else if(xmlChild.Name == ElemEntry)
-					ReadEntry(xmlChild, pg, pwStorage);
+					ReadEntry(xmlChild, pg, pd);
 				else { Debug.Assert(false); }
 			}
 		}
 
-		private static void ReadEntry(XmlNode xmlNode, PwGroup pgParent, PwDatabase pwStorage)
+		private static void ReadEntry(XmlNode xmlNode, PwGroup pgParent, PwDatabase pd)
 		{
 			PwEntry pe = new PwEntry(true, true);
 			pgParent.AddEntry(pe, true);
@@ -132,18 +125,16 @@ namespace KeePass.DataExchange.Formats
 
 			foreach(XmlNode xmlChild in xmlNode)
 			{
-				string str = XmlUtil.SafeInnerText(xmlChild);
-
 				if(xmlChild.Name == "title")
-					ImportUtil.AppendToField(pe, PwDefs.TitleField, str, pwStorage);
+					ImportUtil.Add(pe, PwDefs.TitleField, xmlChild, pd);
 				else if(xmlChild.Name == "userId")
-					ImportUtil.AppendToField(pe, PwDefs.UserNameField, str, pwStorage);
+					ImportUtil.Add(pe, PwDefs.UserNameField, xmlChild, pd);
 				else if(xmlChild.Name == "password")
-					ImportUtil.AppendToField(pe, PwDefs.PasswordField, str, pwStorage);
+					ImportUtil.Add(pe, PwDefs.PasswordField, xmlChild, pd);
 				else if(xmlChild.Name == "note")
-					ImportUtil.AppendToField(pe, PwDefs.NotesField, str, pwStorage);
+					ImportUtil.Add(pe, PwDefs.NotesField, xmlChild, pd);
 				else if(xmlChild.Name == "link")
-					ImportUtil.AppendToField(pe, PwDefs.UrlField, str, pwStorage);
+					ImportUtil.Add(pe, PwDefs.UrlField, xmlChild, pd);
 				else if(xmlChild.Name == "dateAdded")
 					ReadDate(pe, xmlChild, true, false, false);
 				else if(xmlChild.Name == "dateModified")

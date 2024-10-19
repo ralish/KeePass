@@ -20,7 +20,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Text;
 
@@ -28,7 +27,6 @@ using KeePass.Resources;
 
 using KeePassLib;
 using KeePassLib.Interfaces;
-using KeePassLib.Security;
 using KeePassLib.Utility;
 
 namespace KeePass.DataExchange.Formats
@@ -42,60 +40,46 @@ namespace KeePass.DataExchange.Formats
 		public override string FormatName { get { return "Any Password CSV"; } }
 		public override string DefaultExtension { get { return "csv"; } }
 		public override string ApplicationGroup { get { return KPRes.PasswordManagers; } }
-		
+
 		public override bool ImportAppendsToRootGroupOnly { get { return true; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			StreamReader sr = new StreamReader(sInput, Encoding.Default);
-			string strData = sr.ReadToEnd();
-			sr.Close();
+			string strData = MemUtil.ReadString(sInput, Encoding.Default);
 
-			string[] vLines = strData.Split(new char[] { '\r', '\n' },
-				StringSplitOptions.RemoveEmptyEntries);
+			string[] vLines = strData.Split(new char[] { '\r', '\n' });
 
 			foreach(string strLine in vLines)
 			{
-				if(strLine.Length > 5) ProcessCsvLine(strLine, pwStorage);
+				if(strLine.Length > 5) ProcessCsvLine(strLine, pdStorage);
 			}
 		}
 
-		private static void ProcessCsvLine(string strLine, PwDatabase pwStorage)
+		private static void ProcessCsvLine(string strLine, PwDatabase pd)
 		{
-			List<string> list = ImportUtil.SplitCsvLine(strLine, ",");
-			Debug.Assert((list.Count == 6) || (list.Count == 7));
-			if(list.Count < 6) return;
-			bool bIsPro = (list.Count >= 7); // Std exports 6 fields only
+			List<string> l = ImportUtil.SplitCsvLine(strLine, ",");
+			Debug.Assert((l.Count == 6) || (l.Count == 7));
+			if(l.Count < 6) return;
+			bool bIsPro = (l.Count >= 7); // Std exports 6 fields only
 
 			PwEntry pe = new PwEntry(true, true);
-			pwStorage.RootGroup.AddEntry(pe, true);
+			pd.RootGroup.AddEntry(pe, true);
 
-			pe.Strings.Set(PwDefs.TitleField, new ProtectedString(
-				pwStorage.MemoryProtection.ProtectTitle,
-				ParseCsvWord(list[0], false)));
-			pe.Strings.Set(PwDefs.UserNameField, new ProtectedString(
-				pwStorage.MemoryProtection.ProtectUserName,
-				ParseCsvWord(list[1], false)));
-			pe.Strings.Set(PwDefs.PasswordField, new ProtectedString(
-				pwStorage.MemoryProtection.ProtectPassword,
-				ParseCsvWord(list[2], false)));
-			pe.Strings.Set(PwDefs.UrlField, new ProtectedString(
-				pwStorage.MemoryProtection.ProtectUrl,
-				ParseCsvWord(list[3], false)));
+			ImportUtil.Add(pe, PwDefs.TitleField, ParseCsvWord(l[0], false), pd);
+			ImportUtil.Add(pe, PwDefs.UserNameField, ParseCsvWord(l[1], false), pd);
+			ImportUtil.Add(pe, PwDefs.PasswordField, ParseCsvWord(l[2], false), pd);
+			ImportUtil.Add(pe, PwDefs.UrlField, ParseCsvWord(l[3], false), pd);
 
 			int p = 3;
 			if(bIsPro)
-				pe.Strings.Set(KPRes.Custom, new ProtectedString(false,
-					ParseCsvWord(list[++p], false)));
+				ImportUtil.Add(pe, KPRes.Custom, ParseCsvWord(l[++p], false), pd);
 
-			pe.Strings.Set(PwDefs.NotesField, new ProtectedString(
-				pwStorage.MemoryProtection.ProtectNotes,
-				ParseCsvWord(list[++p], true)));
+			ImportUtil.Add(pe, PwDefs.NotesField, ParseCsvWord(l[++p], true), pd);
 
 			DateTime dt;
-			if(DateTime.TryParse(ParseCsvWord(list[++p], false), out dt))
-				pe.CreationTime = pe.LastAccessTime = pe.LastModificationTime =
+			if(DateTime.TryParse(ParseCsvWord(l[++p], false), out dt))
+				pe.CreationTime = pe.LastModificationTime = pe.LastAccessTime =
 					TimeUtil.ToUtc(dt, false);
 			else { Debug.Assert(false); }
 		}

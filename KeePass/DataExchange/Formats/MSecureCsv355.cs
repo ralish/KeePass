@@ -45,7 +45,7 @@ namespace KeePass.DataExchange.Formats
 
 		public override bool ImportAppendsToRootGroupOnly { get { return false; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
 			byte[] pb = MemUtil.Read(sInput);
@@ -72,8 +72,8 @@ namespace KeePass.DataExchange.Formats
 				string[] vLine = csr.ReadLine();
 				if(vLine == null) break;
 
-				if(bVersion6) AddEntry6(vLine, pwStorage);
-				else AddEntry3(vLine, pwStorage, dGroups);
+				if(bVersion6) AddEntry6(vLine, pdStorage);
+				else AddEntry3(vLine, pdStorage, dGroups);
 			}
 		}
 
@@ -390,14 +390,12 @@ namespace KeePass.DataExchange.Formats
 						!PwDefs.IsStandardField(strName));
 					string strValue = Unescape(v[2], bAllowNewLine);
 
-					ImportUtil.CreateFieldWithIndex(pe.Strings, strName,
-						strValue, pd, false);
+					ImportUtil.Add(pe, strName, strValue, pd);
 				}
 				else
 				{
 					Debug.Assert(false);
-					ImportUtil.AppendToField(pe, PwDefs.NotesField,
-						Unescape(vLine[i], true), pd);
+					ImportUtil.Add(pe, PwDefs.NotesField, Unescape(vLine[i], true), pd);
 				}
 			}
 		}

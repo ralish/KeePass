@@ -18,7 +18,6 @@
 */
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -29,115 +28,89 @@ using Microsoft.Win32;
 using KeePass.Util.Spr;
 
 using KeePassLib.Native;
-using KeePassLib.Security;
 using KeePassLib.Utility;
 
 namespace KeePass.Util
 {
 	public static class AppLocator
 	{
-		private enum AlxApp
-		{
-			InternetExplorer = 0,
-			Firefox,
-			Opera,
-			Chrome,
-			Safari,
-			Edge
-		}
-
 		private delegate string FindAppDelegate();
 
-		private static readonly Dictionary<AlxApp, string> m_dPaths =
-			new Dictionary<AlxApp, string>();
-
+		private static string g_strIEPath = null;
 		public static string InternetExplorerPath
 		{
-			get { return GetPath(AlxApp.InternetExplorer, FindInternetExplorer); }
+			get { return GetPath(ref g_strIEPath, FindInternetExplorer); }
 		}
 
+		private static string g_strFirefoxPath = null;
 		public static string FirefoxPath
 		{
-			get { return GetPath(AlxApp.Firefox, FindFirefox); }
+			get { return GetPath(ref g_strFirefoxPath, FindFirefox); }
 		}
 
+		private static string g_strOperaPath = null;
 		public static string OperaPath
 		{
-			get { return GetPath(AlxApp.Opera, FindOpera); }
+			get { return GetPath(ref g_strOperaPath, FindOpera); }
 		}
 
+		private static string g_strChromePath = null;
 		public static string ChromePath
 		{
-			get { return GetPath(AlxApp.Chrome, FindChrome); }
+			get { return GetPath(ref g_strChromePath, FindChrome); }
 		}
 
+		private static string g_strSafariPath = null;
 		public static string SafariPath
 		{
-			get { return GetPath(AlxApp.Safari, FindSafari); }
+			get { return GetPath(ref g_strSafariPath, FindSafari); }
 		}
 
+		private static string g_strEdgePath = null;
 		public static string EdgePath
 		{
-			get { return GetPath(AlxApp.Edge, FindEdge); }
+			get { return GetPath(ref g_strEdgePath, FindEdge); }
 		}
 
-		private static bool? m_obEdgeProtocol = null;
+		private static bool? g_obEdgeProtocol = null;
 		public static bool EdgeProtocolSupported
 		{
 			get
 			{
-				if(m_obEdgeProtocol.HasValue)
-					return m_obEdgeProtocol.Value;
+				if(g_obEdgeProtocol.HasValue) return g_obEdgeProtocol.Value;
 
-				bool b = false;
-				try
-				{
-					using(RegistryKey rk = Registry.ClassesRoot.OpenSubKey(
-						"microsoft-edge", false))
-					{
-						if(rk != null)
-							b = (rk.GetValue("URL Protocol") != null);
-					}
-				}
-				catch(Exception) { Debug.Assert(NativeLib.IsUnix()); }
-
-				m_obEdgeProtocol = b;
+				bool b = (RegUtil.GetValue<object>("HKEY_CLASSES_ROOT\\microsoft-edge",
+					"URL Protocol") != null);
+				g_obEdgeProtocol = b;
 				return b;
 			}
 		}
 
-		private static string GetPath(AlxApp a, FindAppDelegate f)
+		private static string GetPath(ref string strPath, FindAppDelegate f)
 		{
-			string strPath;
-			if(m_dPaths.TryGetValue(a, out strPath)) return strPath;
+			if(strPath != null) return strPath;
 
-			try
-			{
-				strPath = f();
-				if((strPath != null) && (strPath.Length == 0)) strPath = null;
-			}
-			catch(Exception) { Debug.Assert(NativeLib.IsUnix()); strPath = null; }
+			string str;
+			try { str = f(); }
+			catch(Exception) { Debug.Assert(false); str = null; }
 
-			m_dPaths[a] = strPath;
-			return strPath;
+			if(str == null) str = string.Empty;
+			else str = UrlUtil.GetQuotedAppPath(str).Trim();
+
+			strPath = str;
+			return str;
 		}
 
 		public static string FillPlaceholders(string strText, SprContext ctx)
 		{
 			string str = strText;
 
-			str = AppLocator.ReplacePath(str, @"{INTERNETEXPLORER}",
-				AppLocator.InternetExplorerPath, ctx);
-			str = AppLocator.ReplacePath(str, @"{FIREFOX}",
-				AppLocator.FirefoxPath, ctx);
-			str = AppLocator.ReplacePath(str, @"{OPERA}",
-				AppLocator.OperaPath, ctx);
-			str = AppLocator.ReplacePath(str, @"{GOOGLECHROME}",
-				AppLocator.ChromePath, ctx);
-			str = AppLocator.ReplacePath(str, @"{SAFARI}",
-				AppLocator.SafariPath, ctx);
-			str = AppLocator.ReplacePath(str, @"{EDGE}",
-				AppLocator.EdgePath, ctx);
+			str = ReplacePath(str, "{INTERNETEXPLORER}", AppLocator.InternetExplorerPath, ctx);
+			str = ReplacePath(str, "{FIREFOX}", AppLocator.FirefoxPath, ctx);
+			str = ReplacePath(str, "{OPERA}", AppLocator.OperaPath, ctx);
+			str = ReplacePath(str, "{GOOGLECHROME}", AppLocator.ChromePath, ctx);
+			str = ReplacePath(str, "{SAFARI}", AppLocator.SafariPath, ctx);
+			str = ReplacePath(str, "{EDGE}", AppLocator.EdgePath, ctx);
 
 			return str;
 		}
@@ -146,9 +119,8 @@ namespace KeePass.Util
 			string strFill, SprContext ctx)
 		{
 			if(str == null) { Debug.Assert(false); return string.Empty; }
-			if(strPlaceholder == null) { Debug.Assert(false); return str; }
-			if(strPlaceholder.Length == 0) { Debug.Assert(false); return str; }
-			if(strFill == null) return str; // No assert
+			if(string.IsNullOrEmpty(strPlaceholder)) { Debug.Assert(false); return str; }
+			if(string.IsNullOrEmpty(strFill)) return str; // No assert
 
 			string strRep;
 			if((ctx != null) && ctx.EncodeForCommandLine)
@@ -161,38 +133,21 @@ namespace KeePass.Util
 
 		private static string FindInternetExplorer()
 		{
-			const string strIEDef = "SOFTWARE\\Clients\\StartMenuInternet\\IEXPLORE.EXE\\shell\\open\\command";
-			const string strIEWow = "SOFTWARE\\Wow6432Node\\Clients\\StartMenuInternet\\IEXPLORE.EXE\\shell\\open\\command";
-
-			for(int i = 0; i < 6; ++i)
-			{
-				RegistryKey k;
-
+			string[] vKeys = new string[] {
 				// https://msdn.microsoft.com/en-us/library/windows/desktop/dd203067.aspx
-				if(i == 0)
-					k = Registry.CurrentUser.OpenSubKey(strIEDef, false);
-				else if(i == 1)
-					k = Registry.CurrentUser.OpenSubKey(strIEWow, false);
-				else if(i == 2)
-					k = Registry.LocalMachine.OpenSubKey(strIEDef, false);
-				else if(i == 3)
-					k = Registry.LocalMachine.OpenSubKey(strIEWow, false);
-				else if(i == 4)
-					k = Registry.ClassesRoot.OpenSubKey(
-						"IE.AssocFile.HTM\\shell\\open\\command", false);
-				else
-					k = Registry.ClassesRoot.OpenSubKey(
-						"Applications\\iexplore.exe\\shell\\open\\command", false);
+				"HKEY_CURRENT_USER\\SOFTWARE\\Clients\\StartMenuInternet\\IEXPLORE.EXE\\shell\\open\\command",
+				"HKEY_CURRENT_USER\\SOFTWARE\\Wow6432Node\\Clients\\StartMenuInternet\\IEXPLORE.EXE\\shell\\open\\command",
+				"HKEY_LOCAL_MACHINE\\SOFTWARE\\Clients\\StartMenuInternet\\IEXPLORE.EXE\\shell\\open\\command",
+				"HKEY_LOCAL_MACHINE\\SOFTWARE\\Wow6432Node\\Clients\\StartMenuInternet\\IEXPLORE.EXE\\shell\\open\\command",
+				"HKEY_CLASSES_ROOT\\IE.AssocFile.HTM\\shell\\open\\command",
+				"HKEY_CLASSES_ROOT\\Applications\\iexplore.exe\\shell\\open\\command"
+			};
 
-				if(k == null) continue;
+			foreach(string strKey in vKeys)
+			{
+				string str = RegUtil.GetValue<string>(strKey, string.Empty);
+				if(string.IsNullOrEmpty(str)) continue;
 
-				string str = (k.GetValue(string.Empty) as string);
-				k.Close();
-
-				if(str == null) continue;
-
-				str = UrlUtil.GetQuotedAppPath(str).Trim();
-				if(str.Length == 0) continue;
 				// https://sourceforge.net/p/keepass/discussion/329221/thread/6b292ede/
 				if(str.StartsWith("iexplore.exe", StrUtil.CaseIgnoreCmp)) continue;
 
@@ -206,95 +161,67 @@ namespace KeePass.Util
 		{
 			if(NativeLib.IsUnix()) return FindAppUnix("firefox");
 
-			for(int i = 0; i < 2; ++i)
-			{
-				try
-				{
-					string str = FindFirefoxWin(i != 0);
-					if(!string.IsNullOrEmpty(str)) return str;
-				}
-				catch(Exception) { Debug.Assert(false); }
-			}
+			string str = FindFirefoxWin(false);
+			if(!string.IsNullOrEmpty(str)) return str;
+
+			str = FindFirefoxWin(true);
+			if(!string.IsNullOrEmpty(str)) return str;
 
 			return FindAppByClass(".html", "firefox.exe");
 		}
 
 		private static string FindFirefoxWin(bool bWowNode)
 		{
-			string strPath;
-
-			using(RegistryKey kFirefox = Registry.LocalMachine.OpenSubKey((bWowNode ?
-				"SOFTWARE\\Wow6432Node\\Mozilla\\Mozilla Firefox" :
-				"SOFTWARE\\Mozilla\\Mozilla Firefox"), false))
+			using(RegistryKey rkFirefox = RegUtil.OpenSubKey(Registry.LocalMachine,
+				(bWowNode ? "SOFTWARE\\Wow6432Node\\Mozilla\\Mozilla Firefox" :
+				"SOFTWARE\\Mozilla\\Mozilla Firefox")))
 			{
-				if(kFirefox == null) return null;
+				if(rkFirefox == null) return null;
 
-				string strCurVer = (kFirefox.GetValue("CurrentVersion") as string);
+				string strCurVer = RegUtil.GetValue<string>(rkFirefox, "CurrentVersion");
 				if(string.IsNullOrEmpty(strCurVer))
 				{
 					// The ESR version stores the 'CurrentVersion' value under
 					// 'Mozilla Firefox ESR', but the version-specific info
 					// under 'Mozilla Firefox\\<Version>' (without 'ESR')
-					using(RegistryKey kEsr = Registry.LocalMachine.OpenSubKey((bWowNode ?
-						"SOFTWARE\\Wow6432Node\\Mozilla\\Mozilla Firefox ESR" :
-						"SOFTWARE\\Mozilla\\Mozilla Firefox ESR"), false))
-					{
-						if(kEsr != null)
-							strCurVer = (kEsr.GetValue("CurrentVersion") as string);
-					}
-
+					strCurVer = RegUtil.GetValue<string>((bWowNode ?
+						"HKEY_LOCAL_MACHINE\\SOFTWARE\\Wow6432Node\\Mozilla\\Mozilla Firefox ESR" :
+						"HKEY_LOCAL_MACHINE\\SOFTWARE\\Mozilla\\Mozilla Firefox ESR"),
+						"CurrentVersion");
 					if(string.IsNullOrEmpty(strCurVer)) return null;
 				}
 
-				using(RegistryKey kMain = kFirefox.OpenSubKey(strCurVer + "\\Main", false))
+				using(RegistryKey rkMain = RegUtil.OpenSubKey(rkFirefox,
+					strCurVer + "\\Main"))
 				{
-					if(kMain == null) { Debug.Assert(false); return null; }
+					if(rkMain == null) { Debug.Assert(false); return null; }
 
-					strPath = (kMain.GetValue("PathToExe") as string);
-					if(!string.IsNullOrEmpty(strPath))
-						strPath = UrlUtil.GetQuotedAppPath(strPath).Trim();
-					else { Debug.Assert(false); }
+					return RegUtil.GetValue<string>(rkMain, "PathToExe");
 				}
 			}
-
-			return strPath;
 		}
 
 		private static string FindOpera()
 		{
 			if(NativeLib.IsUnix()) return FindAppUnix("opera");
 
-			// Old Opera versions
-			const string strOp12 = "SOFTWARE\\Clients\\StartMenuInternet\\Opera\\shell\\open\\command";
-			// Opera >= 20.0.1387.77
-			const string strOp20 = "SOFTWARE\\Clients\\StartMenuInternet\\OperaStable\\shell\\open\\command";
-
-			for(int i = 0; i < 5; ++i)
-			{
-				RegistryKey k;
-
+			string[] vKeys = new string[] {
 				// https://msdn.microsoft.com/en-us/library/windows/desktop/dd203067.aspx
-				if(i == 0)
-					k = Registry.CurrentUser.OpenSubKey(strOp20, false);
-				else if(i == 1)
-					k = Registry.CurrentUser.OpenSubKey(strOp12, false);
-				else if(i == 2)
-					k = Registry.LocalMachine.OpenSubKey(strOp20, false);
-				else if(i == 3)
-					k = Registry.LocalMachine.OpenSubKey(strOp12, false);
-				else // Old Opera versions
-					k = Registry.ClassesRoot.OpenSubKey(
-						"Opera.HTML\\shell\\open\\command", false);
 
-				if(k == null) continue;
+				// Opera >= 20.0.1387.77
+				"HKEY_CURRENT_USER\\SOFTWARE\\Clients\\StartMenuInternet\\OperaStable\\shell\\open\\command",
+				"HKEY_LOCAL_MACHINE\\SOFTWARE\\Clients\\StartMenuInternet\\OperaStable\\shell\\open\\command",
 
-				string strPath = (k.GetValue(string.Empty) as string);
-				if(!string.IsNullOrEmpty(strPath))
-					strPath = UrlUtil.GetQuotedAppPath(strPath).Trim();
-				else { Debug.Assert(false); }
+				// Old Opera versions
+				"HKEY_CURRENT_USER\\SOFTWARE\\Clients\\StartMenuInternet\\Opera\\shell\\open\\command",
+				"HKEY_LOCAL_MACHINE\\SOFTWARE\\Clients\\StartMenuInternet\\Opera\\shell\\open\\command",
+				"HKEY_CLASSES_ROOT\\Opera.HTML\\shell\\open\\command"
+			};
 
-				k.Close();
-				if(!string.IsNullOrEmpty(strPath)) return strPath;
+			foreach(string strKey in vKeys)
+			{
+				string str = RegUtil.GetValue<string>(strKey, string.Empty);
+				if(!string.IsNullOrEmpty(str)) return str;
 			}
 
 			return null;
@@ -306,93 +233,65 @@ namespace KeePass.Util
 			{
 				string str = FindAppUnix("google-chrome");
 				if(!string.IsNullOrEmpty(str)) return str;
+
 				str = FindAppUnix("chromium");
 				if(!string.IsNullOrEmpty(str)) return str;
+
 				return FindAppUnix("chromium-browser");
 			}
 
 			string strPath = FindChromeNew();
-			if(string.IsNullOrEmpty(strPath))
-				strPath = FindChromeOld();
-			return strPath;
+			if(!string.IsNullOrEmpty(strPath)) return strPath;
+
+			return RegUtil.GetValue<string>(
+				"HKEY_CLASSES_ROOT\\Applications\\chrome.exe\\shell\\open\\command",
+				string.Empty);
 		}
 
 		// HKEY_CLASSES_ROOT\\ChromeHTML[.ID]\\shell\\open\\command
 		private static string FindChromeNew()
 		{
-			RegistryKey kHtml = Registry.ClassesRoot.OpenSubKey("ChromeHTML", false);
-			if(kHtml == null) // New versions append an ID
+			RegistryKey rkHtml = null;
+			try
 			{
-				string[] vKeys = Registry.ClassesRoot.GetSubKeyNames();
-				foreach(string strEnum in vKeys)
+				rkHtml = RegUtil.OpenSubKey(Registry.ClassesRoot, "ChromeHTML");
+				if(rkHtml == null) // New versions append an ID
 				{
-					if(strEnum.StartsWith("ChromeHTML.", StrUtil.CaseIgnoreCmp))
+					string[] vNames = Registry.ClassesRoot.GetSubKeyNames();
+					foreach(string strName in vNames)
 					{
-						kHtml = Registry.ClassesRoot.OpenSubKey(strEnum, false);
-						break;
+						if(strName.StartsWith("ChromeHTML.", StrUtil.CaseIgnoreCmp))
+						{
+							rkHtml = RegUtil.OpenSubKey(Registry.ClassesRoot, strName);
+							break;
+						}
 					}
+
+					if(rkHtml == null) return null;
 				}
 
-				if(kHtml == null) return null;
+				using(RegistryKey rkCommand = RegUtil.OpenSubKey(rkHtml,
+					"shell\\open\\command"))
+				{
+					if(rkCommand != null)
+					{
+						string str = RegUtil.GetValue<string>(rkCommand, string.Empty);
+						if(!string.IsNullOrEmpty(str)) return str;
+					}
+					else { Debug.Assert(false); }
+				}
 			}
+			catch(Exception) { Debug.Assert(false); }
+			finally { if(rkHtml != null) rkHtml.Close(); }
 
-			RegistryKey kCommand = kHtml.OpenSubKey("shell\\open\\command", false);
-			if(kCommand == null)
-			{
-				Debug.Assert(false);
-				kHtml.Close();
-				return null;
-			}
-
-			string strPath = (kCommand.GetValue(string.Empty) as string);
-			if(!string.IsNullOrEmpty(strPath))
-			{
-				strPath = strPath.Trim();
-				strPath = UrlUtil.GetQuotedAppPath(strPath).Trim();
-			}
-			else { Debug.Assert(false); }
-
-			kCommand.Close();
-			kHtml.Close();
-			return strPath;
+			return null;
 		}
 
-		// HKEY_CLASSES_ROOT\\Applications\\chrome.exe\\shell\\open\\command
-		private static string FindChromeOld()
-		{
-			RegistryKey kCommand = Registry.ClassesRoot.OpenSubKey(
-				"Applications\\chrome.exe\\shell\\open\\command", false);
-			if(kCommand == null) return null;
-
-			string strPath = (kCommand.GetValue(string.Empty) as string);
-			if(!string.IsNullOrEmpty(strPath))
-			{
-				strPath = strPath.Trim();
-				strPath = UrlUtil.GetQuotedAppPath(strPath).Trim();
-			}
-			else { Debug.Assert(false); }
-
-			kCommand.Close();
-			return strPath;
-		}
-
-		// HKEY_LOCAL_MACHINE\\SOFTWARE\\Apple Computer, Inc.\\Safari\\BrowserExe
 		private static string FindSafari()
 		{
-			RegistryKey kSafari = Registry.LocalMachine.OpenSubKey(
-				"SOFTWARE\\Apple Computer, Inc.\\Safari", false);
-			if(kSafari == null) return null;
-
-			string strPath = (kSafari.GetValue("BrowserExe") as string);
-			if(!string.IsNullOrEmpty(strPath))
-			{
-				strPath = strPath.Trim();
-				strPath = UrlUtil.GetQuotedAppPath(strPath).Trim();
-			}
-			else { Debug.Assert(false); }
-
-			kSafari.Close();
-			return strPath;
+			return RegUtil.GetValue<string>(
+				"HKEY_LOCAL_MACHINE\\SOFTWARE\\Apple Computer, Inc.\\Safari",
+				"BrowserExe");
 		}
 
 		// Legacy Edge (EdgeHTML)
@@ -422,19 +321,9 @@ namespace KeePass.Util
 
 		private static string FindEdge()
 		{
-			using(RegistryKey k = Registry.LocalMachine.OpenSubKey(
-				"SOFTWARE\\Clients\\StartMenuInternet\\Microsoft Edge\\shell\\open\\command",
-				false))
-			{
-				if(k != null)
-				{
-					string str = (k.GetValue(string.Empty) as string);
-					if(!string.IsNullOrEmpty(str))
-						return UrlUtil.GetQuotedAppPath(str).Trim();
-				}
-			}
-
-			return null;
+			return RegUtil.GetValue<string>(
+				"HKEY_LOCAL_MACHINE\\SOFTWARE\\Clients\\StartMenuInternet\\Microsoft Edge\\shell\\open\\command",
+				string.Empty);
 		}
 
 		private static string FindAppByClass(string strClass, string strExeName)
@@ -447,24 +336,24 @@ namespace KeePass.Util
 
 			try
 			{
-				using(RegistryKey kOpenWith = Registry.ClassesRoot.OpenSubKey(
-					strClass + "\\OpenWithProgids", false))
+				using(RegistryKey rkOpenWith = RegUtil.OpenSubKey(Registry.ClassesRoot,
+					strClass + "\\OpenWithProgids"))
 				{
-					if(kOpenWith == null) { Debug.Assert(false); return null; }
+					if(rkOpenWith == null) { Debug.Assert(false); return null; }
 
-					foreach(string strOpenWithClass in kOpenWith.GetValueNames())
+					foreach(string strOpenWithClass in rkOpenWith.GetValueNames())
 					{
 						if(string.IsNullOrEmpty(strOpenWithClass)) { Debug.Assert(false); continue; }
 
-						using(RegistryKey kCommand = Registry.ClassesRoot.OpenSubKey(
-							strOpenWithClass + "\\Shell\\open\\command", false))
+						using(RegistryKey rkCommand = RegUtil.OpenSubKey(Registry.ClassesRoot,
+							strOpenWithClass + "\\Shell\\open\\command"))
 						{
-							if(kCommand == null) { Debug.Assert(false); continue; }
+							if(rkCommand == null) { Debug.Assert(false); continue; }
 
-							string str = (kCommand.GetValue(string.Empty) as string);
+							string str = RegUtil.GetValue<string>(rkCommand, string.Empty);
 							if(string.IsNullOrEmpty(str)) { Debug.Assert(false); continue; }
 
-							str = UrlUtil.GetQuotedAppPath(str);
+							str = UrlUtil.GetQuotedAppPath(str).Trim();
 
 							if(string.Equals(UrlUtil.GetFileName(str), strExeName,
 								StrUtil.CaseIgnoreCmp))

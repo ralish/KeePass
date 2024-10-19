@@ -32,7 +32,6 @@ using KeePass.Util;
 using KeePass.Util.Spr;
 
 using KeePassLib;
-using KeePassLib.Cryptography.PasswordGenerator;
 using KeePassLib.Native;
 using KeePassLib.Utility;
 
@@ -104,8 +103,8 @@ namespace KeePass.UI
 			try
 			{
 				string strTip = m_strPath;
-				if(strTip.StartsWith("cmd://", StrUtil.CaseIgnoreCmp))
-					strTip = strTip.Substring(6);
+				if(WinUtil.IsCommandLineUrl(strTip))
+					strTip = WinUtil.GetCommandLineFromUrl(strTip);
 
 				if(strTip.Length != 0) m_tsmi.ToolTipText = strTip;
 			}
@@ -128,7 +127,7 @@ namespace KeePass.UI
 
 		private List<OpenWithItem> m_lOpenWith = null;
 
-		private const string PlhTargetUri = @"{OW_URI}";
+		private const string PlhTargetUri = "<URL>";
 
 		public OpenWithMenu(ToolStripDropDownItem tsmiHost)
 		{
@@ -254,7 +253,7 @@ namespace KeePass.UI
 				{
 					string str = strApp.Replace(PlhTargetUri,
 						SprEncoding.EncodeForCommandLine(strUrl));
-					WinUtil.OpenUrl(str, pe, false);
+					WinUtil.OpenUrl(str, pe, false, null, false);
 				}
 				else { Debug.Assert(false); }
 			}
@@ -371,41 +370,41 @@ namespace KeePass.UI
 			catch(Exception) { Debug.Assert(NativeLib.IsUnix()); }
 		}
 
-		private void FindAppsByRegistryPriv(RegistryKey kBase, string strRootSubKey)
+		private void FindAppsByRegistryPriv(RegistryKey rkBase, string strRootSubKey)
 		{
-			RegistryKey kRoot = kBase.OpenSubKey(strRootSubKey, false);
-			if(kRoot == null) return; // No assert, key might not exist
-			string[] vAppSubKeys = kRoot.GetSubKeyNames();
-
-			foreach(string strAppSubKey in vAppSubKeys)
+			using(RegistryKey rkRoot = RegUtil.OpenSubKey(rkBase, strRootSubKey))
 			{
-				RegistryKey kApp = kRoot.OpenSubKey(strAppSubKey, false);
-				string strName = (kApp.GetValue(string.Empty) as string);
-				string strAltName = null;
+				if(rkRoot == null) return; // No assert, key might not exist
 
-				RegistryKey kCmd = kApp.OpenSubKey("shell\\open\\command", false);
-				if(kCmd == null) { kApp.Close(); continue; } // No assert (XP)
-				string strCmdLine = (kCmd.GetValue(string.Empty) as string);
-				kCmd.Close();
-
-				RegistryKey kCaps = kApp.OpenSubKey("Capabilities", false);
-				if(kCaps != null)
+				foreach(string strAppSubKey in rkRoot.GetSubKeyNames())
 				{
-					strAltName = (kCaps.GetValue("ApplicationName") as string);
-					kCaps.Close();
+					string strName, strAltName = null, strCmdLine;
+					using(RegistryKey rkApp = RegUtil.OpenSubKey(rkRoot, strAppSubKey))
+					{
+						strName = RegUtil.GetValue<string>(rkApp, string.Empty);
+
+						using(RegistryKey rkCmd = RegUtil.OpenSubKey(rkApp,
+							"shell\\open\\command"))
+						{
+							if(rkCmd == null) continue; // No assert (XP)
+							strCmdLine = RegUtil.GetValue<string>(rkCmd, string.Empty);
+						}
+
+						using(RegistryKey rkCaps = RegUtil.OpenSubKey(rkApp,
+							"Capabilities"))
+						{
+							if(rkCaps != null)
+								strAltName = RegUtil.GetValue<string>(rkCaps, "ApplicationName");
+						}
+					}
+
+					string strDisplayName = (strName ?? string.Empty);
+					if(!string.IsNullOrEmpty(strAltName) && (strAltName.Length <= strDisplayName.Length))
+						strDisplayName = strAltName;
+
+					AddAppByFile(strCmdLine, strDisplayName);
 				}
-
-				kApp.Close();
-
-				string strDisplayName = string.Empty;
-				if(strName != null) strDisplayName = strName;
-				if((strAltName != null) && (strAltName.Length <= strDisplayName.Length))
-					strDisplayName = strAltName;
-
-				AddAppByFile(strCmdLine, strDisplayName);
 			}
-
-			kRoot.Close();
 		}
 
 		private void FinishOpenWithList()

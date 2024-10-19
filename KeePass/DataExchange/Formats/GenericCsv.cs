@@ -49,13 +49,13 @@ namespace KeePass.DataExchange.Formats
 			get { return KeePass.Properties.Resources.B16x16_Wizard; }
 		}
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
 			byte[] pb = MemUtil.Read(sInput);
 
 			CsvImportForm dlg = new CsvImportForm();
-			dlg.InitEx(pwStorage, pb);
+			dlg.InitEx(pdStorage, pb);
 			UIUtil.ShowDialogAndDestroy(dlg);
 		}
 	}

@@ -19,9 +19,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Net;
+using System.Diagnostics;
 using System.IO;
+using System.Net;
+using System.Text;
+
+using KeePassLib.Utility;
 
 namespace KeePass.Util
 {
@@ -29,108 +32,96 @@ namespace KeePass.Util
 	{
 		/* public static string GZipUtf8ResultToString(DownloadDataCompletedEventArgs e)
 		{
-			if(e.Cancelled || (e.Error != null) || (e.Result == null))
+			if((e == null) || e.Cancelled || (e.Error != null) || (e.Result == null))
 				return null;
 
-			MemoryStream msZipped = new MemoryStream(e.Result);
-			GZipStream gz = new GZipStream(msZipped, CompressionMode.Decompress);
-			BinaryReader br = new BinaryReader(gz);
-			MemoryStream msUTF8 = new MemoryStream();
-
-			while(true)
+			using(MemoryStream msGZ = new MemoryStream(e.Result, false))
 			{
-				byte[] pb = null;
-
-				try { pb = br.ReadBytes(4096); }
-				catch(Exception) { }
-
-				if((pb == null) || (pb.Length == 0)) break;
-
-				msUTF8.Write(pb, 0, pb.Length);
+				using(GZipStream sGZ = new GZipStream(msGZ, CompressionMode.Decompress))
+				{
+					using(MemoryStream msUtf8 = new MemoryStream())
+					{
+						MemUtil.CopyStream(sGZ, msUtf8);
+						return StrUtil.Utf8.GetString(msUtf8.ToArray());
+					}
+				}
 			}
-
-			br.Close();
-			gz.Close();
-			msZipped.Close();
-
-			return StrUtil.Utf8.GetString(msUTF8.ToArray());
 		} */
 
-		public static string WebPageLogin(Uri url, string strPostData,
-			out List<KeyValuePair<string, string>> vCookies)
+		public static string WebPageLogin(Uri uri, string strPostData,
+			out List<KeyValuePair<string, string>> lCookies)
 		{
-			if(url == null) throw new ArgumentNullException("url");
-
-			HttpWebRequest hwr = (HttpWebRequest)HttpWebRequest.Create(url);
+			if(uri == null) throw new ArgumentNullException("uri");
 
 			byte[] pbPostData = Encoding.ASCII.GetBytes(strPostData);
 
+			HttpWebRequest hwr = (HttpWebRequest)HttpWebRequest.Create(uri);
 			hwr.Method = "POST";
 			hwr.ContentType = "application/x-www-form-urlencoded";
 			hwr.ContentLength = pbPostData.Length;
 			hwr.UserAgent = "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.0)";
 
-			Stream s = hwr.GetRequestStream();
-			s.Write(pbPostData, 0, pbPostData.Length);
-			s.Close();
-
-			WebResponse wr = hwr.GetResponse();
-
-			StreamReader sr = new StreamReader(wr.GetResponseStream());
-			string strResponse = sr.ReadToEnd();
-			sr.Close();
-			wr.Close();
-
-			vCookies = new List<KeyValuePair<string, string>>();
-			foreach(string strHeader in wr.Headers.AllKeys)
+			using(Stream s = hwr.GetRequestStream())
 			{
-				if(strHeader == "Set-Cookie")
+				s.Write(pbPostData, 0, pbPostData.Length);
+			}
+
+			string strResponse;
+			using(WebResponse wr = hwr.GetResponse())
+			{
+				using(Stream s = wr.GetResponseStream())
 				{
-					string strCookie = wr.Headers.Get(strHeader);
-					string[] vParts = strCookie.Split(new char[] { ';' });
-					if(vParts.Length < 1) continue;
+					strResponse = MemUtil.ReadString(s, StrUtil.Utf8);
+				}
 
-					string[] vInfo = vParts[0].Split(new char[] { '=' });
-					if(vInfo.Length != 2) continue;
+				lCookies = new List<KeyValuePair<string, string>>();
+				WebHeaderCollection whc = wr.Headers;
+				for(int i = 0; i < whc.Count; ++i)
+				{
+					if(whc.GetKey(i) != "Set-Cookie") continue;
 
-					vCookies.Add(new KeyValuePair<string, string>(
-						vInfo[0], vInfo[1]));
+					string strCookie = whc.Get(i);
+					if(strCookie == null) { Debug.Assert(false); continue; }
+
+					string[] vParts = strCookie.Split(';');
+					if(vParts.Length == 0) { Debug.Assert(false); continue; }
+
+					string[] vInfo = vParts[0].Split('=');
+					if(vInfo.Length != 2) { Debug.Assert(false); continue; }
+
+					lCookies.Add(new KeyValuePair<string, string>(vInfo[0], vInfo[1]));
 				}
 			}
 
 			return strResponse;
 		}
 
-		public static string WebPageGetWithCookies(Uri url,
-			List<KeyValuePair<string, string>> vCookies, string strDomain)
+		public static string WebPageGetWithCookies(Uri uri,
+			List<KeyValuePair<string, string>> lCookies, string strDomain)
 		{
-			if(url == null) throw new ArgumentNullException("url");
+			if(uri == null) throw new ArgumentNullException("uri");
 
-			HttpWebRequest hwr = (HttpWebRequest)HttpWebRequest.Create(url);
-
+			HttpWebRequest hwr = (HttpWebRequest)HttpWebRequest.Create(uri);
 			hwr.Method = "GET";
 			hwr.UserAgent = "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.0)";
 
-			if(vCookies != null)
+			if((lCookies != null) && (lCookies.Count != 0))
 			{
 				hwr.CookieContainer = new CookieContainer();
-
-				foreach(KeyValuePair<string, string> kvpCookie in vCookies)
+				foreach(KeyValuePair<string, string> kvp in lCookies)
 				{
-					Cookie ck = new Cookie(kvpCookie.Key, kvpCookie.Value,
-						"/", strDomain);
+					Cookie ck = new Cookie(kvp.Key, kvp.Value, "/", strDomain);
 					hwr.CookieContainer.Add(ck);
 				}
 			}
 
-			WebResponse wr = hwr.GetResponse();
-
-			StreamReader sr = new StreamReader(wr.GetResponseStream());
-			string strResponse = sr.ReadToEnd();
-			sr.Close();
-			wr.Close();
-
-			return strResponse;
+			using(WebResponse wr = hwr.GetResponse())
+			{
+				using(Stream s = wr.GetResponseStream())
+				{
+					return MemUtil.ReadString(s, StrUtil.Utf8);
+				}
+			}
 		}
 	}
 }

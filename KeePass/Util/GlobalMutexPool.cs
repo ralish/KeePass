@@ -50,26 +50,29 @@ namespace KeePass.Util
 
 		public static bool CreateMutex(string strName, bool bInitiallyOwned)
 		{
-			if(!NativeLib.IsUnix()) // Windows
-				return CreateMutexWin(strName, bInitiallyOwned);
+			if(string.IsNullOrEmpty(strName)) { Debug.Assert(false); return false; }
 
-			return CreateMutexUnix(strName);
+			if(NativeLib.IsUnix()) return CreateMutexUnix(strName);
+			return CreateMutexWin(strName, bInitiallyOwned);
 		}
 
 		private static bool CreateMutexWin(string strName, bool bInitiallyOwned)
 		{
+			Mutex m = null;
 			try
 			{
 				bool bCreatedNew;
-				Mutex m = new Mutex(bInitiallyOwned, strName, out bCreatedNew);
+				m = new Mutex(bInitiallyOwned, strName, out bCreatedNew);
 
 				if(bCreatedNew)
 				{
 					g_lMutexesWin.Add(new KeyValuePair<string, Mutex>(strName, m));
+					m = null; // Prevent 'Close' in 'finally'
 					return true;
 				}
 			}
-			catch(Exception) { }
+			catch(Exception) { Debug.Assert(false); }
+			finally { if(m != null) m.Close(); }
 
 			return false;
 		}
@@ -127,22 +130,22 @@ namespace KeePass.Util
 
 		public static bool ReleaseMutex(string strName)
 		{
-			if(!NativeLib.IsUnix()) // Windows
-				return ReleaseMutexWin(strName);
-
-			return ReleaseMutexUnix(strName);
+			if(NativeLib.IsUnix()) return ReleaseMutexUnix(strName);
+			return ReleaseMutexWin(strName);
 		}
 
 		private static bool ReleaseMutexWin(string strName)
 		{
 			for(int i = 0; i < g_lMutexesWin.Count; ++i)
 			{
-				if(g_lMutexesWin[i].Key.Equals(strName, StrUtil.CaseIgnoreCmp))
+				KeyValuePair<string, Mutex> kvp = g_lMutexesWin[i];
+
+				if(kvp.Key.Equals(strName, StrUtil.CaseIgnoreCmp))
 				{
-					try { g_lMutexesWin[i].Value.ReleaseMutex(); }
+					try { kvp.Value.ReleaseMutex(); }
 					catch(Exception) { Debug.Assert(false); }
 
-					try { g_lMutexesWin[i].Value.Close(); }
+					try { kvp.Value.Close(); }
 					catch(Exception) { Debug.Assert(false); }
 
 					g_lMutexesWin.RemoveAt(i);

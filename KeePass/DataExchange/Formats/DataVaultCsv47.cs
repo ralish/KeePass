@@ -27,7 +27,7 @@ using KeePass.Resources;
 
 using KeePassLib;
 using KeePassLib.Interfaces;
-using KeePassLib.Security;
+using KeePassLib.Utility;
 
 namespace KeePass.DataExchange.Formats
 {
@@ -43,34 +43,30 @@ namespace KeePass.DataExchange.Formats
 		
 		public override bool ImportAppendsToRootGroupOnly { get { return true; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			string strData;
-			using(StreamReader sr = new StreamReader(sInput, Encoding.Default))
-			{
-				strData = sr.ReadToEnd();
-			}
+			string strData = MemUtil.ReadString(sInput, Encoding.Default);
 
 			// Fix new-line sequences
 			strData = strData.Replace("\r\r\n", "\r\n");
 
-			CsvStreamReader csv = new CsvStreamReader(strData, false);
+			CsvStreamReader csr = new CsvStreamReader(strData, false);
 			while(true)
 			{
-				string[] v = csv.ReadLine();
+				string[] v = csr.ReadLine();
 				if(v == null) break;
 				if(v.Length == 0) continue;
 
 				PwEntry pe = new PwEntry(true, true);
-				pwStorage.RootGroup.AddEntry(pe, true);
+				pdStorage.RootGroup.AddEntry(pe, true);
 
-				ImportUtil.AppendToField(pe, PwDefs.TitleField, v[0], pwStorage);
+				ImportUtil.Add(pe, PwDefs.TitleField, v[0], pdStorage);
 
 				int p = 1;
 				while((p + 1) < v.Length)
 				{
-					string strMapped = ImportUtil.MapNameToStandardField(v[p], true);
+					string strMapped = ImportUtil.MapNameToStandardField(v[p], false);
 					string strKey = (string.IsNullOrEmpty(strMapped) ? v[p] : strMapped);
 					string strValue = v[p + 1];
 
@@ -79,16 +75,14 @@ namespace KeePass.DataExchange.Formats
 					if(strKey.Length == 0)
 					{
 						if(strValue.Length == 0) continue;
-
-						Debug.Assert(false);
 						strKey = PwDefs.NotesField;
 					}
 
-					ImportUtil.AppendToField(pe, strKey, strValue, pwStorage);
+					ImportUtil.Add(pe, strKey, strValue, pdStorage);
 				}
 
 				if((p < v.Length) && !string.IsNullOrEmpty(v[p]))
-					ImportUtil.AppendToField(pe, PwDefs.NotesField, v[p], pwStorage);
+					ImportUtil.Add(pe, PwDefs.NotesField, v[p], pdStorage);
 			}
 		}
 	}

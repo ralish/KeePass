@@ -42,20 +42,17 @@ namespace KeePass.DataExchange.Formats
 		public override string DefaultExtension { get { return "json"; } }
 		public override string ApplicationGroup { get { return KPRes.PasswordManagers; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			using(StreamReader sr = new StreamReader(sInput, StrUtil.Utf8, true))
-			{
-				string str = sr.ReadToEnd();
-				if(string.IsNullOrEmpty(str)) { Debug.Assert(false); return; }
+			string str = MemUtil.ReadString(sInput, StrUtil.Utf8);
+			if(string.IsNullOrEmpty(str)) { Debug.Assert(false); return; }
 
-				CharStream cs = new CharStream(str);
-				JsonObject joRoot = new JsonObject(cs);
+			CharStream cs = new CharStream(str);
+			JsonObject joRoot = new JsonObject(cs);
 
-				JsonObject[] v = joRoot.GetValueArray<JsonObject>("records");
-				ImportRecords(v, pwStorage);
-			}
+			JsonObject[] v = joRoot.GetValueArray<JsonObject>("records");
+			ImportRecords(v, pdStorage);
 		}
 
 		private static void ImportRecords(JsonObject[] v, PwDatabase pd)

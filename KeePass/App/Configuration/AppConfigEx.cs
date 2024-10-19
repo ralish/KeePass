@@ -566,23 +566,41 @@ namespace KeePass.App.Configuration
 			fFont(ui.DataEditorFont);
 		}
 
+		public void Apply(AceApplyFlags f)
+		{
+			AceApplication aceApp = this.Application; // m_aceApp might be null
+			AceSecurity aceSec = this.Security; // m_sec might be null
+			AceIntegration aceInt = this.Integration; // m_int might be null
+
+			if((f & AceApplyFlags.Proxy) != AceApplyFlags.None)
+				IOConnection.SetProxy(aceInt.ProxyType, aceInt.ProxyAddress,
+					aceInt.ProxyPort, aceInt.ProxyAuthType, aceInt.ProxyUserName,
+					aceInt.ProxyPassword);
+
+			if((f & AceApplyFlags.Ssl) != AceApplyFlags.None)
+				IOConnection.SslCertsAcceptInvalid = aceSec.SslCertsAcceptInvalid;
+
+			if((f & AceApplyFlags.FileTransactions) != AceApplyFlags.None)
+				FileTransactionEx.ExtraSafe = aceApp.FileTxExtra;
+		}
+
 		private static readonly Dictionary<object, string> g_dictXmlPathCache =
 			new Dictionary<object, string>();
-		public static bool IsOptionEnforced(object pContainer, PropertyInfo pi)
+		public static bool IsOptionEnforced(object oContainer, PropertyInfo pi)
 		{
-			if(pContainer == null) { Debug.Assert(false); return false; }
+			if(oContainer == null) { Debug.Assert(false); return false; }
 			if(pi == null) { Debug.Assert(false); return false; }
 
 			XmlDocument xdEnforced = AppConfigSerializer.EnforcedConfigXml;
 			if(xdEnforced == null) return false;
 
 			string strObjPath;
-			if(!g_dictXmlPathCache.TryGetValue(pContainer, out strObjPath))
+			if(!g_dictXmlPathCache.TryGetValue(oContainer, out strObjPath))
 			{
-				strObjPath = XmlUtil.GetObjectXmlPath(Program.Config, pContainer);
+				strObjPath = XmlUtil.GetObjectXmlPath(Program.Config, oContainer);
 				if(string.IsNullOrEmpty(strObjPath)) { Debug.Assert(false); return false; }
 
-				g_dictXmlPathCache[pContainer] = strObjPath;
+				g_dictXmlPathCache[oContainer] = strObjPath;
 			}
 
 			string strProp = XmlSerializerEx.GetXmlName(pi);
@@ -600,41 +618,22 @@ namespace KeePass.App.Configuration
 			return XmlUtil.IsAlwaysEnforced(xn, strXPath, ctx);
 		}
 
-		public static bool IsOptionEnforced(object pContainer, string strPropertyName)
+		public static bool IsOptionEnforced(object oContainer, string strPropertyName)
 		{
-			if(pContainer == null) { Debug.Assert(false); return false; }
+			if(oContainer == null) { Debug.Assert(false); return false; }
 			if(string.IsNullOrEmpty(strPropertyName)) { Debug.Assert(false); return false; }
 
 			// To improve performance (avoid type queries), check here, too
 			XmlDocument xdEnforced = AppConfigSerializer.EnforcedConfigXml;
 			if(xdEnforced == null) return false;
 
-			Type tContainer = pContainer.GetType();
-			PropertyInfo pi = tContainer.GetProperty(strPropertyName);
-			return IsOptionEnforced(pContainer, pi);
+			PropertyInfo pi = oContainer.GetType().GetProperty(strPropertyName);
+			return IsOptionEnforced(oContainer, pi);
 		}
 
 		public static void ClearXmlPathCache()
 		{
 			g_dictXmlPathCache.Clear();
-		}
-
-		public void Apply(AceApplyFlags f)
-		{
-			AceApplication aceApp = this.Application; // m_aceApp might be null
-			AceSecurity aceSec = this.Security; // m_sec might be null
-			AceIntegration aceInt = this.Integration; // m_int might be null
-
-			if((f & AceApplyFlags.Proxy) != AceApplyFlags.None)
-				IOConnection.SetProxy(aceInt.ProxyType, aceInt.ProxyAddress,
-					aceInt.ProxyPort, aceInt.ProxyAuthType, aceInt.ProxyUserName,
-					aceInt.ProxyPassword);
-
-			if((f & AceApplyFlags.Ssl) != AceApplyFlags.None)
-				IOConnection.SslCertsAcceptInvalid = aceSec.SslCertsAcceptInvalid;
-
-			if((f & AceApplyFlags.FileTransactions) != AceApplyFlags.None)
-				FileTransactionEx.ExtraSafe = aceApp.FileTxExtra;
 		}
 
 		internal static void GetNodeOptions(XmNodeOptions o, string strXPath)
@@ -752,6 +751,27 @@ namespace KeePass.App.Configuration
 			return strA;
 		}
 
+		internal static T GetPropertyValue<T>(object oContainer,
+			string strPropertyName, T tDefault, out PropertyInfo piForSet)
+		{
+			piForSet = null;
+			if(oContainer == null) { Debug.Assert(false); return tDefault; }
+			if(string.IsNullOrEmpty(strPropertyName)) { Debug.Assert(false); return tDefault; }
+
+			piForSet = oContainer.GetType().GetProperty(strPropertyName);
+			if(piForSet == null) { Debug.Assert(false); return tDefault; }
+			if(piForSet.PropertyType != typeof(T))
+			{
+				Debug.Assert(false);
+				piForSet = null;
+				return tDefault;
+			}
+
+			T t = (T)piForSet.GetValue(oContainer, null);
+			if(IsOptionEnforced(oContainer, piForSet)) piForSet = null;
+			return t;
+		}
+
 		internal static string GetEmptyXml()
 		{
 			return ("<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n" +
@@ -761,9 +781,7 @@ namespace KeePass.App.Configuration
 
 		internal static XmlDocument CreateEmptyXmlDocument()
 		{
-			XmlDocument xd = XmlUtilEx.CreateXmlDocument();
-			xd.LoadXml(GetEmptyXml());
-			return xd;
+			return XmlUtilEx.LoadXmlDocumentFromString(GetEmptyXml());
 		}
 	}
 

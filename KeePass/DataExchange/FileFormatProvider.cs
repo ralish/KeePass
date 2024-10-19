@@ -18,7 +18,6 @@
 */
 
 using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 
@@ -42,10 +41,9 @@ namespace KeePass.DataExchange
 		}
 
 		/// <summary>
-		/// Default file name extension, without leading dot.
-		/// If there are multiple default/equivalent extensions
-		/// (like e.g. "html" and "htm"), specify all of them
-		/// separated by a '|' (e.g. "html|htm").
+		/// Default file name extension, without a leading dot.
+		/// If there are multiple default extensions (e.g. "html" and "htm"),
+		/// specify all of them separated by a '|' (e.g. "html|htm").
 		/// </summary>
 		public virtual string DefaultExtension
 		{
@@ -53,10 +51,8 @@ namespace KeePass.DataExchange
 		}
 
 		/// <summary>
-		/// Type of the original application using this format (like
-		/// password manager / <c>KPRes.PasswordManagers</c>,
-		/// web site / <c>KPRes.WebSites</c>,
-		/// browser / <c>KPRes.Browser</c>, etc.
+		/// Type of the original application using this format (e.g.
+		/// <c>KPRes.PasswordManagers</c> or <c>KPRes.Browser</c>).
 		/// </summary>
 		public virtual string ApplicationGroup
 		{
@@ -126,21 +122,21 @@ namespace KeePass.DataExchange
 		}
 
 		/// <summary>
-		/// Import a stream into a database. Throws an exception if an error
+		/// Import a stream into a database. Throws an exception when an error
 		/// occurs. Do not call the base class method when overriding it.
 		/// </summary>
-		/// <param name="pwStorage">Data storage into which the data will be imported.</param>
+		/// <param name="pdStorage">Database into which the data will be imported.</param>
 		/// <param name="sInput">Input stream to read the data from.</param>
 		/// <param name="slLogger">Status logger. May be <c>null</c>.</param>
-		public virtual void Import(PwDatabase pwStorage, Stream sInput,
+		public virtual void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
 			GxiProfile p = this.XmlProfile;
 			if(p != null)
 			{
-				if(pwStorage == null) throw new ArgumentNullException("pwStorage");
+				if(pdStorage == null) throw new ArgumentNullException("pdStorage");
 
-				GxiImporter.Import(pwStorage.RootGroup, sInput, p, pwStorage, slLogger);
+				GxiImporter.Import(pdStorage.RootGroup, sInput, p, pdStorage, slLogger);
 				return;
 			}
 
@@ -148,17 +144,16 @@ namespace KeePass.DataExchange
 		}
 
 		/// <summary>
-		/// Export data into a stream. Throws an exception if an error
-		/// occurs (like writing to stream fails, etc.). Returns <c>true</c>,
-		/// if the export was successful.
+		/// Export data into a stream. Throws an exception when an error
+		/// occurs. Do not call the base class method when overriding it.
 		/// </summary>
 		/// <param name="pwExportInfo">Contains the data source and detailed
 		/// information about which entries should be exported.</param>
 		/// <param name="sOutput">Output stream to write the data to.</param>
 		/// <param name="slLogger">Status logger. May be <c>null</c>.</param>
-		/// <returns>Returns <c>false</c>, if the user has aborted the export
-		/// process (like clicking Cancel in an additional export settings
-		/// dialog).</returns>
+		/// <returns>Returns <c>true</c>, if the export was successful.
+		/// Returns <c>false</c>, if the user has aborted the export process
+		/// (like clicking 'Cancel' in an additional export settings dialog).</returns>
 		public virtual bool Export(PwExportInfo pwExportInfo, Stream sOutput,
 			IStatusLogger slLogger)
 		{

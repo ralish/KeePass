@@ -23,11 +23,15 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Windows.Forms;
 
 using KeePass.App.Configuration;
 using KeePass.Forms;
+using KeePass.Resources;
+using KeePass.UI;
 
 using KeePassLib;
 using KeePassLib.Collections;
@@ -130,13 +134,13 @@ namespace KeePass.Util.Spr
 			if((ctx.Flags & SprCompileFlags.Comments) != SprCompileFlags.None)
 				str = RemoveComments(str, null, null);
 
-			// The following realizes {T-CONV:/Text/Raw/}, which should be
-			// one of the first transformations (except comments)
-			if((ctx.Flags & SprCompileFlags.TextTransforms) != SprCompileFlags.None)
-				str = PerformTextTransforms(str, ctx, uRecursionLevel);
-
 			if((ctx.Flags & SprCompileFlags.Run) != SprCompileFlags.None)
 				str = RunCommands(str, ctx, uRecursionLevel);
+
+			// The following realizes {T-CONV:/Text/Raw/}, which should be
+			// one of the first transformations (except comments and run)
+			if((ctx.Flags & SprCompileFlags.TextTransforms) != SprCompileFlags.None)
+				str = PerformTextTransforms(str, ctx, uRecursionLevel);
 
 			if((ctx.Flags & SprCompileFlags.DataActive) != SprCompileFlags.None)
 				str = PerformClipboardCopy(str, ctx, uRecursionLevel);
@@ -586,16 +590,21 @@ namespace KeePass.Util.Spr
 					else if(chWanted == 'A')
 						strInsData = peFound.Strings.ReadSafe(PwDefs.UrlField);
 					else if(chWanted == 'P')
-						strInsData = peFound.Strings.ReadSafe(PwDefs.PasswordField);
+					{
+						if(!ctx.ForcePlainTextPasswords &&
+							Program.Config.MainWindow.IsColumnHidden(AceColumnType.Password))
+							strInsData = PwDefs.HiddenPassword;
+						// Mass confirm non-active => DoS
+						else if(((ctx.Flags & SprCompileFlags.Active) == SprCompileFlags.None) ||
+							ConfirmSpr(strFullRef, Program.Config.UI, "ShowRefPPlhConfirmDialog"))
+							strInsData = peFound.Strings.ReadSafe(PwDefs.PasswordField);
+						else strInsData = string.Empty;
+					}
 					else if(chWanted == 'N')
 						strInsData = peFound.Strings.ReadSafe(PwDefs.NotesField);
 					else if(chWanted == 'I')
 						strInsData = peFound.Uuid.ToHexString();
 					else { nOffset = nStart + 1; continue; }
-
-					if((chWanted == 'P') && !ctx.ForcePlainTextPasswords &&
-						Program.Config.MainWindow.IsColumnHidden(AceColumnType.Password))
-						strInsData = PwDefs.HiddenPassword;
 
 					SprContext sprSub = ctx.WithoutContentTransformations();
 					sprSub.Entry = peFound;
@@ -652,6 +661,39 @@ namespace KeePass.Util.Spr
 			ctx.Database.RootGroup.SearchEntries(sp, lFound);
 
 			return ((lFound.UCount > 0) ? lFound.GetAt(0) : null);
+		}
+
+		private static bool ConfirmSpr(string strPlh, object oCfgContainer,
+			string strCfgPropName)
+		{
+			PropertyInfo piForSet;
+			if(!AppConfigEx.GetPropertyValue<bool>(oCfgContainer, strCfgPropName,
+				true, out piForSet))
+				return true;
+
+			strPlh = (strPlh ?? string.Empty).Trim();
+
+			string strText = KPRes.SprPlhQ;
+			if(strPlh.Length != 0)
+				strText = strPlh + MessageService.NewParagraph + strText;
+
+			VistaTaskDialog dlg = new VistaTaskDialog();
+			dlg.Content = strText;
+			if(piForSet != null)
+				dlg.VerificationText = UIUtil.GetDialogNoShowAgainText(null);
+			dlg.WindowTitle = PwDefs.ShortProductName;
+			dlg.SetIcon(VtdCustomIcon.Question);
+			dlg.AddButton((int)DialogResult.OK, KPRes.Yes, null);
+			dlg.AddButton((int)DialogResult.Cancel, KPRes.No, null);
+
+			if(dlg.ShowDialog())
+			{
+				bool b = (dlg.Result == (int)DialogResult.OK);
+				if(b && (piForSet != null) && dlg.ResultVerificationChecked)
+					piForSet.SetValue(oCfgContainer, false, null);
+				return b;
+			}
+			return MessageService.AskYesNo(strText);
 		}
 
 		// Cf. char[] overload
@@ -889,6 +931,8 @@ namespace KeePass.Util.Spr
 			{
 				if(lParams.Count == 0) continue;
 
+				string strCmdOrg = (lParams[0] ?? string.Empty);
+
 				string strBaseRaw = null;
 				if((ctx != null) && (ctx.Base != null))
 				{
@@ -897,12 +941,13 @@ namespace KeePass.Util.Spr
 					else strBaseRaw = ctx.Base;
 				}
 
-				string strCmd = WinUtil.CompileUrl((lParams[0] ?? string.Empty),
-					((ctx != null) ? ctx.Entry : null), true, strBaseRaw, true);
+				string strCmd = WinUtil.CompileUrl(strCmdOrg, ((ctx != null) ?
+					ctx.Entry : null), true, strBaseRaw, true);
 				if(WinUtil.IsCommandLineUrl(strCmd))
 					strCmd = WinUtil.GetCommandLineFromUrl(strCmd);
 				if(string.IsNullOrEmpty(strCmd)) continue;
 
+				string strApp = null, strArgs = null;
 				Process p = null;
 				try
 				{
@@ -914,7 +959,6 @@ namespace KeePass.Util.Spr
 
 					ProcessStartInfo psi = new ProcessStartInfo();
 
-					string strApp, strArgs;
 					StrUtil.SplitCommandLine(strCmd, out strApp, out strArgs);
 					if(string.IsNullOrEmpty(strApp)) continue;
 					psi.FileName = strApp;
@@ -946,6 +990,10 @@ namespace KeePass.Util.Spr
 
 					bool bWait = GetParam(d, "w", "1").Equals("1", sc);
 
+					if(!FileDialogsEx.ConfirmRunFile(strCmdOrg, strApp, strArgs,
+						Program.Config.UI, "ShowCmdPlhConfirmDialog"))
+						continue;
+
 					p = NativeLib.StartProcessEx(psi);
 					if(p == null) { Debug.Assert(false); continue; }
 
@@ -964,7 +1012,10 @@ namespace KeePass.Util.Spr
 
 					if(bWait) p.WaitForExit();
 				}
-				catch(Exception ex) { MessageService.ShowWarning(strCmd, ex); }
+				catch(Exception ex)
+				{
+					FileDialogsEx.ShowFileException(strCmdOrg, ex, strApp, strArgs);
+				}
 				finally
 				{
 					try { if(p != null) p.Dispose(); }

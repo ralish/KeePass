@@ -163,24 +163,9 @@ namespace KeePass.Util
 
 			// Environment.OSVersion is reliable only up to version 6.2;
 			// https://msdn.microsoft.com/library/windows/desktop/ms724832.aspx
-			RegistryKey rk = null;
-			try
-			{
-				rk = Registry.LocalMachine.OpenSubKey(
-					"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", false);
-				if(rk != null)
-				{
-					string str = rk.GetValue("CurrentMajorVersionNumber",
-						string.Empty).ToString();
-					uint u;
-					if(uint.TryParse(str, out u))
-						g_bIsAtLeastWindows10 = (u >= 10);
-					else { Debug.Assert(string.IsNullOrEmpty(str)); }
-				}
-				else { Debug.Assert(false); }
-			}
-			catch(Exception) { Debug.Assert(false); }
-			finally { if(rk != null) rk.Close(); }
+			g_bIsAtLeastWindows10 = (RegUtil.GetValue<uint>(
+				"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion",
+				"CurrentMajorVersionNumber") >= 10);
 
 			try
 			{
@@ -194,6 +179,24 @@ namespace KeePass.Util
 				else { Debug.Assert(!g_bIsAppX); } // No AppX by default
 			}
 			catch(Exception) { Debug.Assert(false); }
+		}
+
+		internal static string GetFileArgsText(string strFile, string strArgs)
+		{
+			string str = string.Empty;
+
+			strFile = (strFile ?? string.Empty).Trim();
+			if(strFile.Length != 0)
+				str = KPRes.FileOrUrl + ":" + MessageService.NewLine + strFile;
+
+			strArgs = (strArgs ?? string.Empty).Trim();
+			if(strArgs.Length != 0)
+			{
+				if(str.Length != 0) str += MessageService.NewParagraph;
+				str += KPRes.Arguments + ":" + MessageService.NewLine + strArgs;
+			}
+
+			return str;
 		}
 
 		public static void OpenEntryUrl(PwEntry pe)
@@ -222,7 +225,7 @@ namespace KeePass.Util
 
 		public static void OpenUrl(string strUrlToOpen, PwEntry peDataSource)
 		{
-			OpenUrl(strUrlToOpen, peDataSource, true, null);
+			OpenUrl(strUrlToOpen, peDataSource, true);
 		}
 
 		public static void OpenUrl(string strUrlToOpen, PwEntry peDataSource,
@@ -234,9 +237,19 @@ namespace KeePass.Util
 		public static void OpenUrl(string strUrlToOpen, PwEntry peDataSource,
 			bool bAllowOverride, string strBaseRaw)
 		{
+			OpenUrl(strUrlToOpen, peDataSource, bAllowOverride, strBaseRaw, true);
+		}
+
+		internal static void OpenUrl(string strUrlToOpen, PwEntry peDataSource,
+			bool bAllowOverride, string strBaseRaw, bool bReqConfirm)
+		{
 			VoidDelegate f = delegate()
 			{
-				try { OpenUrlPriv(strUrlToOpen, peDataSource, bAllowOverride, strBaseRaw); }
+				try
+				{
+					OpenUrlPriv(strUrlToOpen, peDataSource, bAllowOverride,
+						strBaseRaw, bReqConfirm);
+				}
 				catch(Exception) { Debug.Assert(false); }
 			};
 
@@ -246,7 +259,7 @@ namespace KeePass.Util
 		}
 
 		private static void OpenUrlPriv(string strUrlToOpen, PwEntry peDataSource,
-			bool bAllowOverride, string strBaseRaw)
+			bool bAllowOverride, string strBaseRaw, bool bReqConfirm)
 		{
 			if(string.IsNullOrEmpty(strUrlToOpen)) { Debug.Assert(false); return; }
 
@@ -276,9 +289,12 @@ namespace KeePass.Util
 				StrUtil.SplitCommandLine(WinUtil.GetCommandLineFromUrl(strUrl),
 					out strApp, out strArgs);
 
+				bool bRun = (!bReqConfirm || FileDialogsEx.ConfirmRunFile(strUrlToOpen,
+					strApp, strArgs, Program.Config.UI, "ShowCmdUriConfirmDialog"));
+
 				try
 				{
-					try { NativeLib.StartProcess(strApp, strArgs); }
+					try { if(bRun) NativeLib.StartProcess(strApp, strArgs); }
 					catch(Win32Exception)
 					{
 						ProcessStartInfo psi = new ProcessStartInfo();
@@ -289,22 +305,17 @@ namespace KeePass.Util
 						NativeLib.StartProcess(psi);
 					}
 				}
-				catch(Exception exCmd)
+				catch(Exception ex)
 				{
-					string strMsg = KPRes.FileOrUrl + ": " + strApp;
-					if(!string.IsNullOrEmpty(strArgs))
-						strMsg += MessageService.NewParagraph +
-							KPRes.Arguments + ": " + strArgs;
-
-					MessageService.ShowWarning(strMsg, exCmd);
+					FileDialogsEx.ShowFileException(strUrlToOpen, ex, strApp, strArgs);
 				}
 			}
 			else // Standard URL
 			{
 				try { NativeLib.StartProcess(strUrl); }
-				catch(Exception exUrl)
+				catch(Exception ex)
 				{
-					MessageService.ShowWarning(strUrl, exUrl);
+					FileDialogsEx.ShowFileException(strUrlToOpen, ex, strUrl, null);
 				}
 			}
 
@@ -374,7 +385,7 @@ namespace KeePass.Util
 			strApp = SprEncoding.EncodeForCommandLine(strApp);
 
 			string str = "cmd://\"" + strApp + "\" \"" + strUrl + "\"";
-			OpenUrl(str, peDataSource, false);
+			OpenUrl(str, peDataSource, false, null, false);
 		}
 
 		internal static void OpenUrlDirectly(string strUrl)
@@ -615,12 +626,7 @@ namespace KeePass.Util
 		{
 			if(strUrl == null) { Debug.Assert(false); return false; }
 
-			if(strUrl.StartsWith("cmd://", StrUtil.CaseIgnoreCmp))
-				return true;
-			if(strUrl.StartsWith("\\\\"))
-				return true; // UNC path support
-
-			return false;
+			return strUrl.StartsWith("cmd://", StrUtil.CaseIgnoreCmp);
 		}
 
 		// See IsCommandLineUrl when editing this method
@@ -630,8 +636,6 @@ namespace KeePass.Util
 
 			if(strUrl.StartsWith("cmd://", StrUtil.CaseIgnoreCmp))
 				return strUrl.Remove(0, 6);
-			if(strUrl.StartsWith("\\\\"))
-				return strUrl; // UNC path support
 
 			return strUrl;
 		}
@@ -740,57 +744,57 @@ namespace KeePass.Util
 
 		private static ulong GetMaxNetVersionPriv()
 		{
-			RegistryKey kNdp = Registry.LocalMachine.OpenSubKey(
-				"SOFTWARE\\Microsoft\\NET Framework Setup\\NDP", false);
-			if(kNdp == null) { Debug.Assert(false); return 0; }
-
 			ulong uMaxVer = 0;
 
-			string[] vInNdp = kNdp.GetSubKeyNames();
-			foreach(string strInNdp in vInNdp)
+			using(RegistryKey rkNdp = RegUtil.OpenSubKey(Registry.LocalMachine,
+				"SOFTWARE\\Microsoft\\NET Framework Setup\\NDP"))
 			{
-				if(strInNdp == null) { Debug.Assert(false); continue; }
-				if(!strInNdp.StartsWith("v", StrUtil.CaseIgnoreCmp)) continue;
+				if(rkNdp == null) { Debug.Assert(false); return 0; }
 
-				RegistryKey kVer = kNdp.OpenSubKey(strInNdp, false);
-				if(kVer != null)
+				string[] vInNdp = rkNdp.GetSubKeyNames();
+				foreach(string strInNdp in vInNdp)
 				{
-					UpdateNetVersionFromRegKey(kVer, ref uMaxVer);
+					if(strInNdp == null) { Debug.Assert(false); continue; }
+					if(!strInNdp.StartsWith("v", StrUtil.CaseIgnoreCmp)) continue;
 
-					string[] vProfiles = kVer.GetSubKeyNames();
-					foreach(string strProfile in vProfiles)
+					using(RegistryKey rkVer = RegUtil.OpenSubKey(rkNdp, strInNdp))
 					{
-						if(string.IsNullOrEmpty(strProfile)) { Debug.Assert(false); continue; }
+						if(rkVer == null) { Debug.Assert(false); continue; }
 
-						RegistryKey kPro = kVer.OpenSubKey(strProfile, false);
-						UpdateNetVersionFromRegKey(kPro, ref uMaxVer);
-						if(kPro != null) kPro.Close();
+						UpdateNetVersionFromRegKey(rkVer, ref uMaxVer);
+
+						string[] vProfiles = rkVer.GetSubKeyNames();
+						foreach(string strProfile in vProfiles)
+						{
+							if(string.IsNullOrEmpty(strProfile)) { Debug.Assert(false); continue; }
+
+							using(RegistryKey rkPro = RegUtil.OpenSubKey(rkVer,
+								strProfile))
+							{
+								UpdateNetVersionFromRegKey(rkPro, ref uMaxVer);
+							}
+						}
 					}
-
-					kVer.Close();
 				}
-				else { Debug.Assert(false); }
 			}
 
-			kNdp.Close();
 			return uMaxVer;
 		}
 
-		private static void UpdateNetVersionFromRegKey(RegistryKey k, ref ulong uMaxVer)
+		private static void UpdateNetVersionFromRegKey(RegistryKey rk, ref ulong uMaxVer)
 		{
-			if(k == null) { Debug.Assert(false); return; }
+			if(rk == null) { Debug.Assert(false); return; }
 
 			try
 			{
 				// https://msdn.microsoft.com/en-us/library/hh925568.aspx
-				string strInstall = k.GetValue("Install", string.Empty).ToString();
-				if((strInstall.Length > 0) && (strInstall != "1")) return;
+				if(RegUtil.GetValue<uint>(rk, "Install", 1) != 1) return;
 
-				string strVer = k.GetValue("Version", string.Empty).ToString();
-				if(strVer.Length > 0)
+				string str = RegUtil.GetValue<string>(rk, "Version");
+				if(!string.IsNullOrEmpty(str))
 				{
-					ulong uVer = StrUtil.ParseVersion(strVer);
-					if(uVer > uMaxVer) uMaxVer = uVer;
+					ulong u = StrUtil.ParseVersion(str);
+					if(u > uMaxVer) uMaxVer = u;
 				}
 			}
 			catch(Exception) { Debug.Assert(false); }

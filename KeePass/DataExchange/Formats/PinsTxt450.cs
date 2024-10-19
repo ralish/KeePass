@@ -47,12 +47,10 @@ namespace KeePass.DataExchange.Formats
 		public override string DefaultExtension { get { return "txt"; } }
 		public override string ApplicationGroup { get { return KPRes.PasswordManagers; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			StreamReader sr = new StreamReader(sInput, Encoding.Default);
-			string strData = sr.ReadToEnd();
-			sr.Close();
+			string strData = MemUtil.ReadString(sInput, Encoding.Default);
 
 			string[] vLines = strData.Split(new char[] { '\r', '\n' });
 
@@ -66,11 +64,11 @@ namespace KeePass.DataExchange.Formats
 
 					bFirst = false;
 				}
-				else if(strLine.Length > 5) ImportLine(strLine, pwStorage);
+				else if(strLine.Length > 5) ImportLine(strLine, pdStorage);
 			}
 		}
 
-		private static void ImportLine(string strLine, PwDatabase pwStorage)
+		private static void ImportLine(string strLine, PwDatabase pd)
 		{
 			string[] vParts = strLine.Split(new string[] { FieldSeparator },
 				StringSplitOptions.None);
@@ -83,19 +81,15 @@ namespace KeePass.DataExchange.Formats
 
 			vParts[8] = vParts[8].Replace("||", "\r\n");
 
-			PwGroup pg = pwStorage.RootGroup.FindCreateGroup(vParts[0], true);
+			PwGroup pg = pd.RootGroup.FindCreateGroup(vParts[0], true);
 			PwEntry pe = new PwEntry(true, true);
 			pg.AddEntry(pe, true);
 
-			pe.Strings.Set(PwDefs.TitleField, new ProtectedString(
-				pwStorage.MemoryProtection.ProtectTitle, vParts[1]));
-			pe.Strings.Set(PwDefs.UserNameField, new ProtectedString(
-				pwStorage.MemoryProtection.ProtectUserName, vParts[2]));
-			pe.Strings.Set(PwDefs.PasswordField, new ProtectedString(
-				pwStorage.MemoryProtection.ProtectPassword, vParts[3]));
-			pe.Strings.Set(PwDefs.UrlField, new ProtectedString(
-				pwStorage.MemoryProtection.ProtectUrl, vParts[4]));
-			
+			ImportUtil.Add(pe, PwDefs.TitleField, vParts[1], pd);
+			ImportUtil.Add(pe, PwDefs.UserNameField, vParts[2], pd);
+			ImportUtil.Add(pe, PwDefs.PasswordField, vParts[3], pd);
+			ImportUtil.Add(pe, PwDefs.UrlField, vParts[4], pd);
+
 			if(vParts[5].Length > 0)
 				pe.Strings.Set("Custom", new ProtectedString(false, vParts[5]));
 
@@ -110,8 +104,7 @@ namespace KeePass.DataExchange.Formats
 				pe.Expires = true;
 			}
 
-			pe.Strings.Set(PwDefs.NotesField, new ProtectedString(
-				pwStorage.MemoryProtection.ProtectNotes, vParts[8]));
+			ImportUtil.Add(pe, PwDefs.NotesField, vParts[8], pd);
 		}
 	}
 }

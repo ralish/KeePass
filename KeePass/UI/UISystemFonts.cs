@@ -142,10 +142,9 @@ namespace KeePass.UI
 			string strConfig = strHome + @".gconf/desktop/gnome/interface/%gconf.xml";
 			if(!File.Exists(strConfig)) return;
 
-			XmlDocument doc = XmlUtilEx.CreateXmlDocument();
-			doc.Load(strConfig);
+			XmlDocument xd = XmlUtilEx.LoadXmlDocument(strConfig, StrUtil.Utf8);
 
-			foreach(XmlNode xn in doc.DocumentElement.ChildNodes)
+			foreach(XmlNode xn in xd.DocumentElement.ChildNodes)
 			{
 				if(string.Equals(xn.Name, "entry") &&
 					string.Equals(xn.Attributes.GetNamedItem("name").Value, "font_name"))

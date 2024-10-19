@@ -458,10 +458,7 @@ namespace KeePass.Util
 			using(Stream s = IOConnection.OpenRead(IOConnectionInfo.FromPath(
 				strKeyFile)))
 			{
-				using(StreamReader sr = new StreamReader(s, StrUtil.Utf8, true))
-				{
-					strContent = sr.ReadToEnd();
-				}
+				strContent = MemUtil.ReadString(s, StrUtil.Utf8);
 			}
 
 			// Internet Explorer 11 does not support the 'tab-size' CSS property

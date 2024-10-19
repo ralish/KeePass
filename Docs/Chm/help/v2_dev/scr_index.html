@@ -13,7 +13,7 @@
 	
 	
 
-	<meta name="DC.title" content="Scripting KeePass (2.x) - KeePass" />
+	<meta name="DC.title" content="Scripting (2.x) - KeePass" />
 	<meta name="DC.creator" content="Dominik Reichl" />
 	<meta name="DC.type" content="Text" />
 	<meta name="DC.format" content="text/html" />
@@ -22,7 +22,7 @@
 
 	<meta name="robots" content="index, follow" />
 
-	<title>Scripting KeePass (2.x) - KeePass</title>
+	<title>Scripting (2.x) - KeePass</title>
 	<base target="_self" />
 	<link rel="stylesheet" type="text/css" href="../../default.css" />
 
@@ -34,38 +34,46 @@
 
 <table class="sectionheader"><tr>
 <td><img src="../images/b64x64_konsole.png" alt="" /></td>
-<td><h1>Scripting KeePass (2.x)</h1>
-<p>How to automate database operations in KeePass 2.x.</p></td>
+<td><h1>Scripting (2.x)</h1>
+<p>How to automate KeePass 2.x.</p></td>
 </tr></table>
 
-<p><b>Prerequisites:</b></p>
+<p>In order to automate KeePass, you need either the KPScript tool
+or PowerShell.</p>
 
-<p>In order to automate KeePass, you need the <i>KPScript</i> plugin/extension.
-You can find the latest version of KPScript on the KeePass plugins
-web page.
+<ul class="withspc">
+<li>You can find the latest version of KPScript on the KeePass
+<a href="https://keepass.info/plugins.html" target="_blank">plugins</a> page.
 The <code>KPScript.exe</code> file needs to be copied into the directory
-where KeePass is installed (where the <code>KeePass.exe</code> file is).</p>
+where KeePass is installed (which contains the <code>KeePass.exe</code> file).</li>
 
-<hr />
+<li>A suitable PowerShell version is included in Windows 10/11.
+On other operating systems, you may need to install it first.</li>
+</ul>
 
-<p>There are two ways to automate KeePass: <i>single command operations</i>
-and <i>KPS script files</i>.</p>
+<p>There are three ways to automate KeePass:</p>
 
-<ul>
-<li><a href="scr_sc_index.html">Single Command Operations</a>:
+<ul class="withspc">
+<li><a href="scr_sc_index.html">KPScript - Single Command Operations</a>:<br />
 KPScript can be invoked using single commands. By passing the database location,
 its key, a command and eventually some parameters, simple operations like adding
 an entry can be performed. The syntax is very simple, no scripting knowledge is
 required. This method is ideal when you quickly want to do some small changes to
 the database. It is not recommended when you need to perform many operations, because
 for each command the database needs to be loaded from file, decrypted, modified,
-encrypted and written back to file.<br />
-<br /></li>
+encrypted and written back to file.</li>
 
-<li><a href="scr_kps_index.html">KPS Script Files</a>: These files are a lot more
-powerful than single command operations, but are also more complicated. You need
-to have heavy experience in C# programming and the KeePass 2.x internals.
-Within KPS files you can do everything that KeePass does.</li>
+<li><a href="scr_kps_index.html">KPScript - KPS Script Files</a>:<br />
+These files are a lot more powerful than single command operations, but are also
+more complicated.
+You need to have experience in C# programming and the KeePass 2.x internals.</li>
+
+<li>PowerShell:<br />
+With PowerShell, you can load the <code>KeePass.exe</code> assembly and do
+everything that KeePass can do.<br />
+<img src="../images/b16x16_tar.png" alt="ZIP Package" />
+<a href="https://keepass.info/help/download/Scripts_Examples_PS.zip"
+target="_blank">Download KeePass example PowerShell scripts</a>.</li>
 </ul>
 
 </body></html>

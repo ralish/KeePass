@@ -26,13 +26,10 @@ using System.Threading;
 using System.Windows.Forms;
 
 using KeePass.App;
-using KeePass.Native;
 using KeePass.Resources;
-using KeePass.Util;
 
 using KeePassLib;
 using KeePassLib.Interfaces;
-using KeePassLib.Security;
 using KeePassLib.Utility;
 
 namespace KeePass.DataExchange.Formats
@@ -54,7 +51,7 @@ namespace KeePass.DataExchange.Formats
 			get { return KeePass.Properties.Resources.B16x16_View_Detailed; }
 		}
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
 			if(!MessageService.AskYesNo(KPRes.ImportMustRead + MessageService.NewParagraph +
@@ -77,7 +74,7 @@ namespace KeePass.DataExchange.Formats
 			{
 				while(true)
 				{
-					PwEntry pe = ImportEntry(pwStorage);
+					PwEntry pe = ImportEntry(pdStorage);
 
 					if(ImportUtil.EntryEquals(pe, pePrev))
 					{
@@ -92,10 +89,10 @@ namespace KeePass.DataExchange.Formats
 
 				MessageService.ShowInfo(KPRes.ImportFinished);
 			}
-			catch(Exception exImp) { MessageService.ShowWarning(exImp); }
+			catch(Exception ex) { MessageService.ShowWarning(ex); }
 		}
 
-		private static PwEntry ImportEntry(PwDatabase pwDb)
+		private static PwEntry ImportEntry(PwDatabase pd)
 		{
 			ImportUtil.GuiSendWaitWindowChange(@"{ENTER}");
 			Thread.Sleep(250);
@@ -108,18 +105,13 @@ namespace KeePass.DataExchange.Formats
 
 			ImportUtil.GuiSendWaitWindowChange(@"{ESC}");
 
-			PwGroup pg = pwDb.RootGroup;
 			PwEntry pe = new PwEntry(true, true);
-			pg.AddEntry(pe, true);
+			pd.RootGroup.AddEntry(pe, true);
 
-			pe.Strings.Set(PwDefs.TitleField, new ProtectedString(
-				pwDb.MemoryProtection.ProtectTitle, strTitle));
-			pe.Strings.Set(PwDefs.UserNameField, new ProtectedString(
-				pwDb.MemoryProtection.ProtectUserName, strUserName));
-			pe.Strings.Set(PwDefs.PasswordField, new ProtectedString(
-				pwDb.MemoryProtection.ProtectPassword, strPassword));
-			pe.Strings.Set(PwDefs.NotesField, new ProtectedString(
-				pwDb.MemoryProtection.ProtectNotes, strNotes));
+			ImportUtil.Add(pe, PwDefs.TitleField, strTitle, pd);
+			ImportUtil.Add(pe, PwDefs.UserNameField, strUserName, pd);
+			ImportUtil.Add(pe, PwDefs.PasswordField, strPassword, pd);
+			ImportUtil.Add(pe, PwDefs.NotesField, strNotes, pd);
 
 			return pe;
 		}

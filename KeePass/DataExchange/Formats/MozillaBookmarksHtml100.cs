@@ -28,7 +28,6 @@ using System.Text;
 using System.Xml;
 
 using KeePass.Resources;
-using KeePass.UI;
 using KeePass.Util;
 
 using KeePassLib;
@@ -52,12 +51,10 @@ namespace KeePass.DataExchange.Formats
 		// //////////////////////////////////////////////////////////////////
 		// Import
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			StreamReader sr = new StreamReader(sInput, Encoding.UTF8);
-			string strContent = sr.ReadToEnd();
-			sr.Close();
+			string strContent = MemUtil.ReadString(sInput, Encoding.UTF8);
 
 			if(strContent.IndexOf(@"<!DOCTYPE NETSCAPE-Bookmark-file-1>") < 0)
 				throw new FormatException("Invalid DOCTYPE!");
@@ -118,35 +115,29 @@ namespace KeePass.DataExchange.Formats
 
 			strContent = "<RootSentinel>" + strContent + "</META></RootSentinel>";
 
-			byte[] pbFixedData = StrUtil.Utf8.GetBytes(strContent);
-			MemoryStream msFixed = new MemoryStream(pbFixedData, false);
-
-			XmlDocument xmlDoc = XmlUtilEx.CreateXmlDocument();
-			xmlDoc.Load(msFixed);
-			msFixed.Close();
+			XmlDocument xmlDoc = XmlUtilEx.LoadXmlDocumentFromString(strContent);
 
 			XmlNode xmlRoot = xmlDoc.DocumentElement;
 			foreach(XmlNode xmlChild in xmlRoot)
 			{
 				if(xmlChild.Name == "META")
-					ImportMeta(xmlChild, pwStorage);
+					ImportMeta(xmlChild, pdStorage);
 			}
 		}
 
-		private static void ImportMeta(XmlNode xmlNode, PwDatabase pwStorage)
+		private static void ImportMeta(XmlNode xmlNode, PwDatabase pd)
 		{
 			foreach(XmlNode xmlChild in xmlNode)
 			{
 				if(xmlChild.Name == "DL")
-					ImportGroup(xmlChild, pwStorage, pwStorage.RootGroup);
+					ImportGroup(xmlChild, pd.RootGroup, pd);
 				else if(xmlChild.Name == "TITLE") { }
 				else if(xmlChild.Name == "H1") { }
 				else { Debug.Assert(false); }
 			}
 		}
 
-		private static void ImportGroup(XmlNode xmlNode, PwDatabase pwStorage,
-			PwGroup pg)
+		private static void ImportGroup(XmlNode xmlNode, PwGroup pg, PwDatabase pd)
 		{
 			PwGroup pgSub = pg;
 			PwEntry pe = null;
@@ -158,20 +149,17 @@ namespace KeePass.DataExchange.Formats
 					pe = new PwEntry(true, true);
 					pg.AddEntry(pe, true);
 
-					pe.Strings.Set(PwDefs.TitleField, new ProtectedString(
-						pwStorage.MemoryProtection.ProtectTitle,
-						XmlUtil.SafeInnerText(xmlChild)));
+					ImportUtil.Add(pe, PwDefs.TitleField, xmlChild, pd);
 
 					XmlNode xnUrl = xmlChild.Attributes.GetNamedItem("HREF");
 					if((xnUrl != null) && (xnUrl.Value != null))
-						pe.Strings.Set(PwDefs.UrlField, new ProtectedString(
-							pwStorage.MemoryProtection.ProtectUrl, xnUrl.Value));
+						ImportUtil.Add(pe, PwDefs.UrlField, xnUrl.Value, pd);
 					else { Debug.Assert(false); }
 
 					// pe.Strings.Set("RDF_ID", new ProtectedString(
 					//	false, xmlChild.Attributes.GetNamedItem("ID").Value));
 
-					ImportIcon(xmlChild, pe, pwStorage);
+					ImportIcon(xmlChild, pe, pd);
 
 					XmlNode xnTags = xmlChild.Attributes.GetNamedItem("TAGS");
 					if((xnTags != null) && (xnTags.Value != null))
@@ -180,8 +168,8 @@ namespace KeePass.DataExchange.Formats
 				else if(xmlChild.Name == "DD")
 				{
 					if(pe != null)
-						ImportUtil.AppendToField(pe, PwDefs.NotesField,
-							XmlUtil.SafeInnerText(xmlChild).Trim(), pwStorage);
+						ImportUtil.Add(pe, PwDefs.NotesField, XmlUtil.SafeInnerText(
+							xmlChild).Trim(), pd);
 					else { Debug.Assert(false); }
 				}
 				else if(xmlChild.Name == "H3")
@@ -195,7 +183,7 @@ namespace KeePass.DataExchange.Formats
 					}
 				}
 				else if(xmlChild.Name == "DL")
-					ImportGroup(xmlChild, pwStorage, pgSub);
+					ImportGroup(xmlChild, pgSub, pd);
 				else { Debug.Assert(false); }
 			}
 		}
@@ -282,7 +270,6 @@ namespace KeePass.DataExchange.Formats
 
 			byte[] pbData = StrUtil.Utf8.GetBytes(strData);
 			sOutput.Write(pbData, 0, pbData.Length);
-			sOutput.Close();
 			return true;
 		}
 

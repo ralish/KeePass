@@ -40,7 +40,7 @@ namespace KeePass.Util
 		{
 			IniFile ini = new IniFile();
 
-			using(StreamReader sr = new StreamReader(strFile, enc))
+			using(StreamReader sr = new StreamReader(strFile, enc, true))
 			{
 				string strSection = string.Empty;
 
@@ -60,12 +60,14 @@ namespace KeePass.Util
 						if(iSep < 0) { Debug.Assert(false); }
 						else
 						{
-							string strKey = str.Substring(0, iSep);
-							string strValue = str.Substring(iSep + 1);
+							StrDict d;
+							if(!ini.m_dSections.TryGetValue(strSection, out d))
+							{
+								d = new StrDict();
+								ini.m_dSections[strSection] = d;
+							}
 
-							if(!ini.m_dSections.ContainsKey(strSection))
-								ini.m_dSections[strSection] = new StrDict();
-							ini.m_dSections[strSection][strKey] = strValue;
+							d[str.Substring(0, iSep)] = str.Substring(iSep + 1);
 						}
 					}
 				}

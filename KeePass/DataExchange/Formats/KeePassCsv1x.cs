@@ -26,7 +26,6 @@ using System.Text;
 using KeePassLib;
 using KeePassLib.Delegates;
 using KeePassLib.Interfaces;
-using KeePassLib.Security;
 using KeePassLib.Utility;
 
 namespace KeePass.DataExchange.Formats
@@ -40,22 +39,19 @@ namespace KeePass.DataExchange.Formats
 		public override string DefaultExtension { get { return "csv"; } }
 		public override string ApplicationGroup { get { return PwDefs.ShortProductName; } }
 
-		/* public override void Import(PwDatabase pwStorage, Stream sInput,
+		/* public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			StreamReader sr = new StreamReader(sInput, Encoding.UTF8);
-			string strFileContents = sr.ReadToEnd();
-			sr.Close();
-
+			string strFileContents = MemUtil.ReadString(sInput, StrUtil.Utf8);
 			CharStream csSource = new CharStream(strFileContents);
 
 			while(true)
 			{
-				if(!ReadEntry(pwStorage, csSource)) break;
+				if(!ReadEntry(pdStorage, csSource)) break;
 			}
 		}
 
-		private static bool ReadEntry(PwDatabase pwStorage, CharStream csSource)
+		private static bool ReadEntry(PwDatabase pd, CharStream csSource)
 		{
 			PwEntry pe = new PwEntry(true, true);
 
@@ -81,18 +77,13 @@ namespace KeePass.DataExchange.Formats
 				return true; // Ignore header entry
 			}
 
-			pe.Strings.Set(PwDefs.TitleField, new ProtectedString(
-				pwStorage.MemoryProtection.ProtectTitle, strTitle));
-			pe.Strings.Set(PwDefs.UserNameField, new ProtectedString(
-				pwStorage.MemoryProtection.ProtectUserName, strUser));
-			pe.Strings.Set(PwDefs.PasswordField, new ProtectedString(
-				pwStorage.MemoryProtection.ProtectPassword, strPassword));
-			pe.Strings.Set(PwDefs.UrlField, new ProtectedString(
-				pwStorage.MemoryProtection.ProtectUrl, strUrl));
-			pe.Strings.Set(PwDefs.NotesField, new ProtectedString(
-				pwStorage.MemoryProtection.ProtectNotes, strNotes));
+			ImportUtil.Add(pe, PwDefs.TitleField, strTitle, pd);
+			ImportUtil.Add(pe, PwDefs.UserNameField, strUser, pd);
+			ImportUtil.Add(pe, PwDefs.PasswordField, strPassword, pd);
+			ImportUtil.Add(pe, PwDefs.UrlField, strUrl, pd);
+			ImportUtil.Add(pe, PwDefs.NotesField, strNotes, pd);
 
-			pwStorage.RootGroup.AddEntry(pe, true);
+			pd.RootGroup.AddEntry(pe, true);
 			return true;
 		}
 
@@ -132,18 +123,19 @@ namespace KeePass.DataExchange.Formats
 			PwGroup pg = (pwExportInfo.DataGroup ?? ((pwExportInfo.ContextDatabase !=
 				null) ? pwExportInfo.ContextDatabase.RootGroup : null));
 
-			StreamWriter sw = new StreamWriter(sOutput, StrUtil.Utf8);
-			sw.Write("\"Account\",\"Login Name\",\"Password\",\"Web Site\",\"Comments\"\r\n");
-
-			EntryHandler eh = delegate(PwEntry pe)
+			using(StreamWriter sw = new StreamWriter(sOutput, StrUtil.Utf8))
 			{
-				WriteCsvEntry(sw, pe);
-				return true;
-			};
+				sw.Write("\"Account\",\"Login Name\",\"Password\",\"Web Site\",\"Comments\"\r\n");
 
-			if(pg != null) pg.TraverseTree(TraversalMethod.PreOrder, null, eh);
+				EntryHandler eh = delegate(PwEntry pe)
+				{
+					WriteCsvEntry(sw, pe);
+					return true;
+				};
 
-			sw.Close();
+				if(pg != null) pg.TraverseTree(TraversalMethod.PreOrder, null, eh);
+			}
+
 			return true;
 		}
 

@@ -61,7 +61,6 @@ namespace KeePass.DataExchange.Formats
 				{
 					byte[] pb = StrUtil.Utf8.GetBytes(dlg.GeneratedHtml);
 					sOutput.Write(pb, 0, pb.Length);
-					sOutput.Close();
 
 					bResult = true;
 				}

@@ -105,147 +105,138 @@ namespace TrlUtil
 
 		private static void ExecuteCmd(string strCmd, string strFile)
 		{
-			if(strCmd == "convert_resx")
+			/* if(strCmd == "convert_resx")
 			{
-				StreamWriter swOut = new StreamWriter(strFile + ".lng.xml",
-					false, new UTF8Encoding(false));
+				XmlDocument xdIn = XmlUtilEx.CreateXmlDocument();
+				xdIn.Load(strFile);
 
-				XmlDocument xmlIn = XmlUtilEx.CreateXmlDocument();
-				xmlIn.Load(strFile);
-
-				foreach(XmlNode xmlChild in xmlIn.DocumentElement.ChildNodes)
+				using(StreamWriter sw = new StreamWriter(strFile + ".lng.xml",
+					false, StrUtil.Utf8))
 				{
-					if(xmlChild.Name != "data") continue;
+					foreach(XmlNode xn in xdIn.DocumentElement.ChildNodes)
+					{
+						if(xn.Name != "data") continue;
 
-					swOut.Write("<Data Name=\"" + xmlChild.Attributes["name"].Value +
-						"\">\r\n\t<Value>" + xmlChild.SelectSingleNode("value").InnerXml +
-						"</Value>\r\n</Data>\r\n");
+						sw.Write("<Data Name=\"" + xn.Attributes["name"].Value +
+							"\">\r\n\t<Value>" + xn.SelectSingleNode("value").InnerXml +
+							"</Value>\r\n</Data>\r\n");
+					}
 				}
-
-				swOut.Close();
-			}
+			} */
 			/* else if(strCmd == "compress")
 			{
-				byte[] pbData = File.ReadAllBytes(strFile);
-
-				FileStream fs = new FileStream(strFile + ".lngx", FileMode.Create,
-					FileAccess.Write, FileShare.None);
-				GZipStream gz = new GZipStream(fs, CompressionMode.Compress);
-
-				gz.Write(pbData, 0, pbData.Length);
-				gz.Close();
-				fs.Close();
+				byte[] pbData = MemUtil.Compress(File.ReadAllBytes(strFile));
+				File.WriteAllBytes(strFile + ".lngx", pbData);
 			} */
-			else if(strCmd == "src_from_xml")
+			if(strCmd == "src_from_xml")
 			{
-				XmlDocument xmlIn = XmlUtilEx.CreateXmlDocument();
-				xmlIn.Load(strFile);
+				XmlDocument xdIn = XmlUtilEx.CreateXmlDocument();
+				xdIn.Load(strFile);
 
-				foreach(XmlNode xmlTable in xmlIn.DocumentElement.SelectNodes("StringTable"))
+				foreach(XmlNode xnTable in xdIn.DocumentElement.SelectNodes("StringTable"))
 				{
-					StreamWriter swOut = new StreamWriter(xmlTable.Attributes["Name"].Value +
-						".Generated.cs", false, new UTF8Encoding(false));
+					using(StreamWriter sw = new StreamWriter(xnTable.Attributes[
+						"Name"].Value + ".Generated.cs", false, StrUtil.Utf8))
+					{
+						sw.WriteLine("// This is a generated file!");
+						sw.WriteLine("// Do not edit manually, changes will be overwritten.");
+						sw.WriteLine();
+						sw.WriteLine("using System;");
+						sw.WriteLine("using System.Collections.Generic;");
+						sw.WriteLine();
+						sw.WriteLine("namespace " + xnTable.Attributes["Namespace"].Value);
+						sw.WriteLine("{");
+						sw.WriteLine("\t/// <summary>");
+						sw.WriteLine("\t/// A strongly-typed resource class, for looking up localized strings, etc.");
+						sw.WriteLine("\t/// </summary>");
+						sw.WriteLine("\tpublic static partial class " + xnTable.Attributes["Name"].Value);
+						sw.WriteLine("\t{");
 
-					swOut.WriteLine("// This is a generated file!");
-					swOut.WriteLine("// Do not edit manually, changes will be overwritten.");
-					swOut.WriteLine();
-					swOut.WriteLine("using System;");
-					swOut.WriteLine("using System.Collections.Generic;");
-					swOut.WriteLine();
-					swOut.WriteLine("namespace " + xmlTable.Attributes["Namespace"].Value);
-					swOut.WriteLine("{");
-					swOut.WriteLine("\t/// <summary>");
-					swOut.WriteLine("\t/// A strongly-typed resource class, for looking up localized strings, etc.");
-					swOut.WriteLine("\t/// </summary>");
-					swOut.WriteLine("\tpublic static partial class " + xmlTable.Attributes["Name"].Value);
-					swOut.WriteLine("\t{");
+						sw.WriteLine("\t\tprivate static string TryGetEx(Dictionary<string, string> dictNew,");
+						sw.WriteLine("\t\t\tstring strName, string strDefault)");
+						sw.WriteLine("\t\t{");
+						sw.WriteLine("\t\t\tstring strTemp;");
+						sw.WriteLine();
+						sw.WriteLine("\t\t\tif(dictNew.TryGetValue(strName, out strTemp))");
+						sw.WriteLine("\t\t\t\treturn strTemp;");
+						sw.WriteLine();
+						sw.WriteLine("\t\t\treturn strDefault;");
+						sw.WriteLine("\t\t}");
+						sw.WriteLine();
 
-					swOut.WriteLine("\t\tprivate static string TryGetEx(Dictionary<string, string> dictNew,");
-					swOut.WriteLine("\t\t\tstring strName, string strDefault)");
-					swOut.WriteLine("\t\t{");
-					swOut.WriteLine("\t\t\tstring strTemp;");
-					swOut.WriteLine();
-					swOut.WriteLine("\t\t\tif(dictNew.TryGetValue(strName, out strTemp))");
-					swOut.WriteLine("\t\t\t\treturn strTemp;");
-					swOut.WriteLine();
-					swOut.WriteLine("\t\t\treturn strDefault;");
-					swOut.WriteLine("\t\t}");
-					swOut.WriteLine();
-
-					swOut.WriteLine("\t\tpublic static void SetTranslatedStrings(Dictionary<string, string> dictNew)");
-					swOut.WriteLine("\t\t{");
-					swOut.WriteLine("\t\t\tif(dictNew == null) throw new ArgumentNullException(\"dictNew\");");
-					swOut.WriteLine();
+						sw.WriteLine("\t\tpublic static void SetTranslatedStrings(Dictionary<string, string> dictNew)");
+						sw.WriteLine("\t\t{");
+						sw.WriteLine("\t\t\tif(dictNew == null) throw new ArgumentNullException(\"dictNew\");");
+						sw.WriteLine();
 
 #if DEBUG
-					string strLastName = string.Empty;
+						string strLastName = string.Empty;
 #endif
-					foreach(XmlNode xmlData in xmlTable.SelectNodes("Data"))
-					{
-						string strName = xmlData.Attributes["Name"].Value;
-
-						swOut.WriteLine("\t\t\tm_str" + strName +
-							" = TryGetEx(dictNew, \"" + strName +
-							"\", m_str" + strName + ");");
-
-#if DEBUG
-						Debug.Assert((string.Compare(strLastName, strName, true) < 0),
-							"Data names not sorted: " + strLastName + " - " + strName + ".");
-						strLastName = strName;
-#endif
-					}
-
-					swOut.WriteLine("\t\t}");
-					swOut.WriteLine();
-
-					swOut.WriteLine("\t\tprivate static readonly string[] m_vKeyNames = {");
-					XmlNodeList xNodes = xmlTable.SelectNodes("Data");
-					for(int i = 0; i < xNodes.Count; ++i)
-					{
-						XmlNode xmlData = xNodes.Item(i);
-						swOut.WriteLine("\t\t\t\"" + xmlData.Attributes["Name"].Value +
-							"\"" + ((i != xNodes.Count - 1) ? "," : string.Empty));
-					}
-
-					swOut.WriteLine("\t\t};");
-					swOut.WriteLine();
-
-					swOut.WriteLine("\t\tpublic static string[] GetKeyNames()");
-					swOut.WriteLine("\t\t{");
-					swOut.WriteLine("\t\t\treturn m_vKeyNames;");
-					swOut.WriteLine("\t\t}");
-
-					foreach(XmlNode xmlData in xmlTable.SelectNodes("Data"))
-					{
-						string strName = xmlData.Attributes["Name"].Value;
-						string strValue = xmlData.SelectSingleNode("Value").InnerText;
-						if(strValue.Contains("\""))
+						foreach(XmlNode xnData in xnTable.SelectNodes("Data"))
 						{
-							// Console.WriteLine(strValue);
-							strValue = strValue.Replace("\"", "\"\"");
+							string strName = xnData.Attributes["Name"].Value;
+
+							sw.WriteLine("\t\t\tm_str" + strName +
+								" = TryGetEx(dictNew, \"" + strName +
+								"\", m_str" + strName + ");");
+
+#if DEBUG
+							Debug.Assert((string.Compare(strLastName, strName, true) < 0),
+								"Data names not sorted: " + strLastName + " - " + strName + ".");
+							strLastName = strName;
+#endif
 						}
 
-						swOut.WriteLine();
-						swOut.WriteLine("\t\tprivate static string m_str" +
-							strName + " =");
-						swOut.WriteLine("\t\t\t@\"" + strValue + "\";");
+						sw.WriteLine("\t\t}");
+						sw.WriteLine();
 
-						swOut.WriteLine("\t\t/// <summary>");
-						swOut.WriteLine("\t\t/// Look up a localized string similar to");
-						swOut.WriteLine("\t\t/// '" + StrUtil.StringToHtml(strValue) + "'.");
-						swOut.WriteLine("\t\t/// </summary>");
-						swOut.WriteLine("\t\tpublic static string " +
-							strName);
-						swOut.WriteLine("\t\t{");
-						swOut.WriteLine("\t\t\tget { return m_str" + strName +
-							"; }");
-						swOut.WriteLine("\t\t}");
+						sw.WriteLine("\t\tprivate static readonly string[] m_vKeyNames = {");
+						XmlNodeList xnl = xnTable.SelectNodes("Data");
+						for(int i = 0; i < xnl.Count; ++i)
+						{
+							XmlNode xnData = xnl.Item(i);
+							sw.WriteLine("\t\t\t\"" + xnData.Attributes["Name"].Value +
+								"\"" + ((i != xnl.Count - 1) ? "," : string.Empty));
+						}
+
+						sw.WriteLine("\t\t};");
+						sw.WriteLine();
+
+						sw.WriteLine("\t\tpublic static string[] GetKeyNames()");
+						sw.WriteLine("\t\t{");
+						sw.WriteLine("\t\t\treturn m_vKeyNames;");
+						sw.WriteLine("\t\t}");
+
+						foreach(XmlNode xnData in xnTable.SelectNodes("Data"))
+						{
+							string strName = xnData.Attributes["Name"].Value;
+							string strValue = xnData.SelectSingleNode("Value").InnerText;
+							if(strValue.Contains("\""))
+							{
+								// Console.WriteLine(strValue);
+								strValue = strValue.Replace("\"", "\"\"");
+							}
+
+							sw.WriteLine();
+							sw.WriteLine("\t\tprivate static string m_str" +
+								strName + " =");
+							sw.WriteLine("\t\t\t@\"" + strValue + "\";");
+
+							sw.WriteLine("\t\t/// <summary>");
+							sw.WriteLine("\t\t/// Look up a localized string similar to");
+							sw.WriteLine("\t\t/// '" + StrUtil.StringToHtml(strValue) + "'.");
+							sw.WriteLine("\t\t/// </summary>");
+							sw.WriteLine("\t\tpublic static string " +
+								strName);
+							sw.WriteLine("\t\t{");
+							sw.WriteLine("\t\t\tget { return m_str" + strName +
+								"; }");
+							sw.WriteLine("\t\t}");
+						}
+
+						sw.WriteLine("\t}"); // Close class
+						sw.WriteLine("}");
 					}
-
-					swOut.WriteLine("\t}"); // Close class
-					swOut.WriteLine("}");
-
-					swOut.Close();
 				}
 			}
 		}

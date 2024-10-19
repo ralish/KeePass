@@ -28,7 +28,6 @@ using KeePass.Resources;
 using KeePassLib;
 using KeePassLib.Interfaces;
 using KeePassLib.Utility;
-using KeePassLib.Security;
 
 namespace KeePass.DataExchange.Formats
 {
@@ -42,12 +41,10 @@ namespace KeePass.DataExchange.Formats
 		public override string DefaultExtension { get { return "txt"; } }
 		public override string ApplicationGroup { get { return KPRes.PasswordManagers; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			StreamReader sr = new StreamReader(sInput, Encoding.Default, true);
-			string strData = sr.ReadToEnd();
-			sr.Close();
+			string strData = MemUtil.ReadString(sInput, Encoding.Default);
 
 			strData = StrUtil.NormalizeNewLines(strData, false);
 
@@ -61,7 +58,7 @@ namespace KeePass.DataExchange.Formats
 			List<string> lData = StrUtil.SplitWithSep(strData, vSeps, true);
 			Debug.Assert((lData.Count & 1) == 1);
 
-			PwGroup pgRoot = pwStorage.RootGroup;
+			PwGroup pgRoot = pdStorage.RootGroup;
 
 			PwGroup pgTemplates = new PwGroup(true, true, "Vorlagen",
 				PwIcon.MarkedDirectory);
@@ -74,11 +71,11 @@ namespace KeePass.DataExchange.Formats
 
 				if(strInit == strInitGroup) { }
 				else if(strInit == strInitTemplate)
-					ImportEntry(strPart, pgTemplates, pwStorage, false);
+					ImportEntry(strPart, pgTemplates, pdStorage, false);
 				else if(strInit == strInitEntry)
-					ImportEntry(strPart, pgRoot, pwStorage, false);
+					ImportEntry(strPart, pgRoot, pdStorage, false);
 				else if(strInit == strInitNote)
-					ImportEntry(strPart, pgRoot, pwStorage, true);
+					ImportEntry(strPart, pgRoot, pdStorage, true);
 				else { Debug.Assert(false); }
 			}
 		}

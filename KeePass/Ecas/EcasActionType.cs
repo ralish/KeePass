@@ -29,53 +29,36 @@ namespace KeePass.Ecas
 
 	public sealed class EcasActionType : IEcasParameterized
 	{
-		private readonly PwUuid m_type;
-		public PwUuid Type
-		{
-			get { return m_type; }
-		}
+		private readonly PwUuid m_puTypeA;
+		public PwUuid Type { get { return m_puTypeA; } }
 
-		private readonly string m_strName;
-		public string Name
-		{
-			get { return m_strName; }
-		}
+		private readonly string m_strNameA;
+		public string Name { get { return m_strNameA; } }
 
-		private readonly PwIcon m_pwIcon;
-		public PwIcon Icon
-		{
-			get { return m_pwIcon; }
-		}
+		private readonly PwIcon m_piA;
+		public PwIcon Icon { get { return m_piA; } }
 
-		private readonly EcasParameter[] m_vParams;
-		public EcasParameter[] Parameters
-		{
-			get { return m_vParams; }
-		}
+		private readonly EcasParameter[] m_vParamsA;
+		public EcasParameter[] Parameters { get { return m_vParamsA; } }
 
 		private readonly EcasActionExecute m_fn;
-		public EcasActionExecute ExecuteMethod
-		{
-			get { return m_fn; }
-		}
+		public EcasActionExecute ExecuteMethod { get { return m_fn; } }
 
 		private static void EcasActionExecuteNull(EcasAction a, EcasContext ctx)
 		{
 		}
 
-		public EcasActionType(PwUuid uuidType, string strName, PwIcon pwIcon,
+		public EcasActionType(PwUuid puType, string strName, PwIcon pi,
 			EcasParameter[] vParams, EcasActionExecute f)
 		{
-			if((uuidType == null) || PwUuid.Zero.Equals(uuidType))
-				throw new ArgumentNullException("uuidType");
+			if((puType == null) || puType.Equals(PwUuid.Zero))
+				throw new ArgumentNullException("puType");
 			if(strName == null) throw new ArgumentNullException("strName");
-			// if(vParams == null) throw new ArgumentNullException("vParams");
-			// if(f == null) throw new ArgumentNullException("f");
 
-			m_type = uuidType;
-			m_strName = strName;
-			m_pwIcon = pwIcon;
-			m_vParams = (vParams ?? EcasParameter.EmptyArray);
+			m_puTypeA = puType;
+			m_strNameA = strName;
+			m_piA = pi;
+			m_vParamsA = (vParams ?? EcasParameter.EmptyArray);
 			m_fn = (f ?? EcasActionExecuteNull);
 		}
 	}

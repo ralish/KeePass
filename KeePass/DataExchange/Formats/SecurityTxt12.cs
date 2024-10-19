@@ -27,7 +27,6 @@ using KeePass.Resources;
 
 using KeePassLib;
 using KeePassLib.Interfaces;
-using KeePassLib.Security;
 
 namespace KeePass.DataExchange.Formats
 {
@@ -47,54 +46,52 @@ namespace KeePass.DataExchange.Formats
 			public List<SecLine> SubLines = new List<SecLine>();
 		}
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			StreamReader sr = new StreamReader(sInput, Encoding.Default);
-
-			Stack<SecLine> vGroups = new Stack<SecLine>();
-			SecLine secRoot = new SecLine();
-			vGroups.Push(secRoot);
-
-			char[] vTrim = new char[] { '\t', '\n', '\r', ' ' };
-
-			while(true)
+			using(StreamReader sr = new StreamReader(sInput, Encoding.Default))
 			{
-				string str = sr.ReadLine();
-				if(str == null) break;
-				if(str.Length == 0) continue;
+				Stack<SecLine> vGroups = new Stack<SecLine>();
+				SecLine secRoot = new SecLine();
+				vGroups.Push(secRoot);
 
-				SecLine line = new SecLine();
-				line.Text = str.Trim(vTrim);
+				char[] vTrim = new char[] { '\t', '\n', '\r', ' ' };
 
-				int nTabs = CountTabs(str);
-
-				if(nTabs == vGroups.Count)
+				while(true)
 				{
-					vGroups.Peek().SubLines.Add(line);
-					vGroups.Push(line);
-				}
-				else
-				{
-					while(nTabs < (vGroups.Count - 1))
-						vGroups.Pop();
+					string str = sr.ReadLine();
+					if(str == null) break;
+					if(str.Length == 0) continue;
 
-					vGroups.Peek().SubLines.Add(line);
-					vGroups.Push(line);
+					SecLine line = new SecLine();
+					line.Text = str.Trim(vTrim);
+
+					int nTabs = CountTabs(str);
+
+					if(nTabs == vGroups.Count)
+					{
+						vGroups.Peek().SubLines.Add(line);
+						vGroups.Push(line);
+					}
+					else
+					{
+						while(nTabs < (vGroups.Count - 1))
+							vGroups.Pop();
+
+						vGroups.Peek().SubLines.Add(line);
+						vGroups.Push(line);
+					}
 				}
+
+				AddSecLine(pdStorage.RootGroup, secRoot, true, pdStorage);
 			}
-
-			AddSecLine(pwStorage.RootGroup, secRoot, true, pwStorage);
-
-			sr.Close();
 		}
 
 		private static int CountTabs(string str)
 		{
-			Debug.Assert(str != null); if(str == null) return 0;
+			if(str == null) { Debug.Assert(false); return 0; }
 
 			int nTabs = 0;
-
 			for(int i = 0; i < str.Length; ++i)
 			{
 				if(str[i] != '\t') break;
@@ -105,7 +102,7 @@ namespace KeePass.DataExchange.Formats
 		}
 
 		private void AddSecLine(PwGroup pgContainer, SecLine line, bool bIsContainer,
-			PwDatabase pwParent)
+			PwDatabase pd)
 		{
 			if(!bIsContainer)
 			{
@@ -123,13 +120,12 @@ namespace KeePass.DataExchange.Formats
 					PwEntry pe = new PwEntry(true, true);
 					pgContainer.AddEntry(pe, true);
 
-					pe.Strings.Set(PwDefs.TitleField, new ProtectedString(
-						pwParent.MemoryProtection.ProtectTitle, line.Text));
+					ImportUtil.Add(pe, PwDefs.TitleField, line.Text, pd);
 				}
 			}
 
 			foreach(SecLine subLine in line.SubLines)
-				AddSecLine(pgContainer, subLine, false, pwParent);
+				AddSecLine(pgContainer, subLine, false, pd);
 		}
 	}
 }

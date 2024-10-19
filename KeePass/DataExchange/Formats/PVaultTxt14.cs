@@ -26,7 +26,7 @@ using KeePass.Resources;
 
 using KeePassLib;
 using KeePassLib.Interfaces;
-using KeePassLib.Security;
+using KeePassLib.Utility;
 
 namespace KeePass.DataExchange.Formats
 {
@@ -36,15 +36,6 @@ namespace KeePass.DataExchange.Formats
 		private const string InitGroup = "************";
 		private const string InitNewEntry = "----------------------";
 
-		private const string InitTitle = "Account:      ";
-		private const string InitUser = "User Name:    ";
-		private const string InitPassword = "Password:     ";
-		private const string InitURL = "Hyperlink:    ";
-		private const string InitEMail = "Email:        ";
-
-		private const string InitNotes = "Comments:     ";
-		private const string ContinueNotes = "              ";
-
 		public override bool SupportsImport { get { return true; } }
 		public override bool SupportsExport { get { return false; } }
 
@@ -52,16 +43,25 @@ namespace KeePass.DataExchange.Formats
 		public override string DefaultExtension { get { return "txt"; } }
 		public override string ApplicationGroup { get { return KPRes.PasswordManagers; } }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
+		public override void Import(PwDatabase pdStorage, Stream sInput,
 			IStatusLogger slLogger)
 		{
-			StreamReader sr = new StreamReader(sInput, Encoding.Default);
-			string strData = sr.ReadToEnd();
-			sr.Close();
+			string strData = MemUtil.ReadString(sInput, Encoding.Default);
 
 			string[] vLines = strData.Split(new char[] { '\r', '\n' });
 
-			PwGroup pg = pwStorage.RootGroup;
+			Dictionary<string, string> dMap = new Dictionary<string, string>
+			{
+				{ "Account:      ", PwDefs.TitleField },
+				{ "User Name:    ", PwDefs.UserNameField },
+				{ "Password:     ", PwDefs.PasswordField },
+				{ "Hyperlink:    ", PwDefs.UrlField },
+				{ "Email:        ", "E-Mail" },
+				{ "Comments:     ", PwDefs.NotesField },
+				{ "              ", PwDefs.NotesField }
+			};
+
+			PwGroup pg = pdStorage.RootGroup;
 			PwEntry pe = new PwEntry(true, true);
 
 			foreach(string strLine in vLines)
@@ -72,7 +72,7 @@ namespace KeePass.DataExchange.Formats
 					if(strGroup.Length > InitGroup.Length)
 						strGroup = strGroup.Substring(0, strGroup.Length - InitGroup.Length);
 
-					pg = pwStorage.RootGroup.FindCreateGroup(strGroup, true);
+					pg = pdStorage.RootGroup.FindCreateGroup(strGroup, true);
 
 					pe = new PwEntry(true, true);
 					pg.AddEntry(pe, true);
@@ -82,35 +82,18 @@ namespace KeePass.DataExchange.Formats
 					pe = new PwEntry(true, true);
 					pg.AddEntry(pe, true);
 				}
-				else if(strLine.StartsWith(InitTitle))
-					pe.Strings.Set(PwDefs.TitleField, new ProtectedString(
-						pwStorage.MemoryProtection.ProtectTitle,
-						strLine.Remove(0, InitTitle.Length)));
-				else if(strLine.StartsWith(InitUser))
-					pe.Strings.Set(PwDefs.UserNameField, new ProtectedString(
-						pwStorage.MemoryProtection.ProtectUserName,
-						strLine.Remove(0, InitUser.Length)));
-				else if(strLine.StartsWith(InitPassword))
-					pe.Strings.Set(PwDefs.PasswordField, new ProtectedString(
-						pwStorage.MemoryProtection.ProtectPassword,
-						strLine.Remove(0, InitPassword.Length)));
-				else if(strLine.StartsWith(InitURL))
-					pe.Strings.Set(PwDefs.UrlField, new ProtectedString(
-						pwStorage.MemoryProtection.ProtectUrl,
-						strLine.Remove(0, InitURL.Length)));
-				else if(strLine.StartsWith(InitEMail))
-					pe.Strings.Set("E-Mail", new ProtectedString(
-						false,
-						strLine.Remove(0, InitEMail.Length)));
-				else if(strLine.StartsWith(InitNotes))
-					pe.Strings.Set(PwDefs.NotesField, new ProtectedString(
-						pwStorage.MemoryProtection.ProtectNotes,
-						strLine.Remove(0, InitNotes.Length)));
-				else if(strLine.StartsWith(ContinueNotes))
-					pe.Strings.Set(PwDefs.NotesField, new ProtectedString(
-						pwStorage.MemoryProtection.ProtectNotes,
-						pe.Strings.ReadSafe(PwDefs.NotesField) + "\r\n" +
-						strLine.Remove(0, ContinueNotes.Length)));
+				else
+				{
+					foreach(KeyValuePair<string, string> kvp in dMap)
+					{
+						if(strLine.StartsWith(kvp.Key))
+						{
+							ImportUtil.Add(pe, kvp.Value, strLine.Remove(0,
+								kvp.Key.Length), pdStorage);
+							break;
+						}
+					}
+				}
 			}
 		}
 	}

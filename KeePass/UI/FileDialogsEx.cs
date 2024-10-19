@@ -21,6 +21,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Text;
 using System.Windows.Forms;
 
@@ -260,6 +261,77 @@ namespace KeePass.UI
 				strName, UIUtil.CreateFileTypeFilter(null, null, true), 1, null,
 				AppDefs.FileDialogContext.Attachments);
 			return ((sfd.ShowDialog() == DialogResult.OK) ? sfd.FileName : null);
+		}
+
+		internal static bool ConfirmRunFile(string strCmdLine, string strCmpFile,
+			string strCmpArgs, object oCfgContainer, string strCfgPropName)
+		{
+			PropertyInfo piForSet;
+			if(!AppConfigEx.GetPropertyValue<bool>(oCfgContainer, strCfgPropName,
+				true, out piForSet))
+				return true;
+
+			strCmdLine = (strCmdLine ?? string.Empty).Trim();
+
+			string strText = KPRes.RunOpenFileQ;
+			if(strCmdLine.Length != 0)
+				strText = strCmdLine + MessageService.NewParagraph + strText;
+
+			string strExpText = WinUtil.GetFileArgsText(strCmpFile, strCmpArgs);
+
+			VistaTaskDialog dlg = new VistaTaskDialog();
+			dlg.Content = strText;
+			if(!string.IsNullOrEmpty(strExpText))
+			{
+				dlg.ExpandedInformation = strExpText;
+				dlg.ExpandedControlText = KPRes.Details;
+				dlg.CollapsedControlText = KPRes.Details;
+				dlg.FooterText = KPRes.FileArgsDetailsHint;
+				dlg.SetFooterIcon(VtdIcon.Information);
+			}
+			if(piForSet != null)
+				dlg.VerificationText = UIUtil.GetDialogNoShowAgainText(null);
+			dlg.WindowTitle = PwDefs.ShortProductName;
+			dlg.SetIcon(VtdCustomIcon.Question);
+			dlg.AddButton((int)DialogResult.OK, KPRes.Yes, null);
+			dlg.AddButton((int)DialogResult.Cancel, KPRes.No, null);
+
+			if(dlg.ShowDialog())
+			{
+				bool b = (dlg.Result == (int)DialogResult.OK);
+				if(b && (piForSet != null) && dlg.ResultVerificationChecked)
+					piForSet.SetValue(oCfgContainer, false, null);
+				return b;
+			}
+			return MessageService.AskYesNo(strText);
+		}
+
+		internal static void ShowFileException(string strCmdLine, Exception ex,
+			string strCmpFile, string strCmpArgs)
+		{
+			StringBuilder sb = new StringBuilder();
+			StrUtil.AppendTrim(sb, null, strCmdLine);
+			StrUtil.AppendTrim(sb, MessageService.NewParagraph,
+				StrUtil.FormatException(ex, null));
+			string strText = sb.ToString();
+
+			string strExpText = WinUtil.GetFileArgsText(strCmpFile, strCmpArgs);
+
+			VistaTaskDialog dlg = new VistaTaskDialog();
+			dlg.Content = strText;
+			if(!string.IsNullOrEmpty(strExpText))
+			{
+				dlg.ExpandedInformation = strExpText;
+				dlg.ExpandedControlText = KPRes.Details;
+				dlg.CollapsedControlText = KPRes.Details;
+				dlg.FooterText = KPRes.FileArgsDetailsHint;
+				dlg.SetFooterIcon(VtdIcon.Information);
+			}
+			dlg.WindowTitle = PwDefs.ShortProductName;
+			dlg.SetIcon(VtdIcon.Warning);
+			dlg.AddButton((int)DialogResult.Cancel, KPRes.Ok, null);
+
+			if(!dlg.ShowDialog()) MessageService.ShowWarning(strText);
 		}
 	}
 
